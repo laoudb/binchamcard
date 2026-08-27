@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="BinchamCard — capture de cartes de visite en salon, carnet centralise, mode kiosque, scoring explicable et export CRM.">
-<meta name="theme-color" content="#15171A">
+<meta name="description" content="BinchamCard — le scanner est le peage d entree, pas la promesse. Qualification, valeur mesurable et export CRM auditable.">
+<meta name="theme-color" content="#E4E5E1">
 <meta property="og:title" content="BinchamCard">
-<meta property="og:description" content="La carte de visite ramassee sur le stand arrive dans votre CRM, qualifiee.">
+<meta property="og:description" content="Chaque lead sort avec une valeur affichee, un proprietaire et une echeance.">
 <meta property="og:type" content="website">
 <style>*{margin:0;padding:0}</style>
 </head>
@@ -5985,72 +5985,179 @@ function render(){
   cablerVue();
 }
 
+/* La page d'ouverture est definie dans 03b-ouverture.js. */
+
 /* ============================================================
-   Vue : présentation (page d'accueil pour les partenaires)
+   Page d'ouverture.
+
+   Elle ne vend pas le scanner : le scanner est une commodité en voie de
+   banalisation, et c'est exactement le terrain où le concurrent allemand
+   est le plus fort. Elle vend ce qu'il ne sait pas faire — la
+   qualification et sa valeur mesurable.
+
+   Chaque argument porte un bouton qui ouvre l'écran qui le prouve.
+   Une démonstration se fait en trois clics, pas en trois paragraphes.
    ============================================================ */
+
+/** Trois preuves, dans l'ordre où on les montre à un partenaire. */
+const PREUVES = [
+  {
+    n: "01",
+    titre: "Le Dévoilement",
+    ou: "Terrain → La Pile → une fiche → Enregistrer",
+    dit: "Nous ne comptons pas les cartes, nous rémunérons la qualification. " +
+         "Le score se révèle, s’arrête net sur le seuil, et nomme le geste le moins cher " +
+         "pour franchir la bande supérieure.",
+    contre: "Chez eux, un score de 0 à 100 calculé en arrière-plan, sans explication " +
+            "et sans retour d’action : le commercial ne voit ni le calcul, ni ce qui lui manque.",
+    aller: "terrain|terrain|pile"
+  },
+  {
+    n: "02",
+    titre: "La confiance, champ par champ",
+    ou: "Terrain → La Pile → une fiche",
+    dit: "Chaque champ extrait porte son niveau de confiance. Sous 0,80 il remonte en tête " +
+         "avec « à vérifier ». L’incertitude devient actionnable au moment où la corriger " +
+         "coûte une seconde.",
+    contre: "Chez eux, un taux de lecture global. Une valeur devinée à l’oreille et une valeur " +
+            "lue au registre du commerce ont exactement la même apparence.",
+    aller: "terrain|terrain|pile"
+  },
+  {
+    n: "03",
+    titre: "L’export auditable",
+    ou: "Pilotage → Export CRM",
+    dit: "Le mapping réel de six CRM, avec les vrais noms d’API, les champs que l’API refuse " +
+         "si on les laisse vides, et les règles de rapprochement avant écriture.",
+    contre: "Chez eux, le mapping personnalisé est une prestation facturée, à tous les paliers, " +
+            "et il n’est pas visible avant achat.",
+    aller: "manager|crm|"
+  }
+];
+
+/** Ce que le produit fait et que le concurrent ne fait pas. */
+const ECARTS = [
+  ["scan", "La capture nue vaut zéro",
+   "Payer le scan fabrique du scan, et pollue la base que le CRM doit recevoir. Seule la " +
+   "qualification produit de la valeur — et la formule est publique, affichée, réglable."],
+  ["layers", "Capture et qualification découplées",
+   "Le contact est acquis dès l’écriture locale, sans attendre le réseau. Le tri se fait plus tard, " +
+   "au calme, depuis La Pile. Un hall de salon n’a pas de réseau et un stand saturé n’a pas de temps."],
+  ["sliders", "Tout se règle sans nous",
+   "Le formulaire de qualification et les pondérations du scoring se modifient dans l’application, " +
+   "avec effet immédiat sur les leads existants. Aucun devis, aucun délai."],
+  ["table", "La borne, et son consentement",
+   "Le visiteur saisit lui-même ses coordonnées : pas de photo, pas d’extraction, pas d’erreur de " +
+   "lecture. Réarmage automatique entre deux visiteurs, et consentement donné de sa main."],
+  ["book", "Un carnet, pas des silos",
+   "Un lead appartient à un salon ; un contact appartient à l’entreprise. Le carnet traverse les " +
+   "salons, tous modes de capture confondus, et détecte ses propres doublons."],
+  ["users", "Le pilotage dans le même produit",
+   "Capture, qualification, carte, scoring, équipe et export vivent dans un seul parcours. " +
+   "Pas quatre produits et deux prestations à comprendre avant de savoir ce qu’on achète."]
+];
+
 function vueAccueil(){
-  const total = S.leads.length;
-  const chauds = S.leads.filter(function(l){ return l.statut === "Chaud"; }).length;
-  const pays = uniq(S.leads.map(function(l){ return l.pays; })).length;
-  const crm = S.leads.filter(function(l){ return l.crm; }).length;
+  const L = S.leads;
+  const chauds = L.filter(function(l){ return l.statut === "Chaud"; }).length;
+  const pays = uniq(L.map(function(l){ return l.pays; })).length;
+  const carnet = (typeof carnetComplet === "function") ? carnetComplet().length : L.length;
+  const valeur = L.reduce(function(s,l){ return s + valeurLead(l).V; }, 0);
 
   return '' +
   '<div class="hero">' +
-    '<p class="eyebrow">Capture de leads en salon professionnel</p>' +
-    '<h1>La carte de visite ramassée sur le stand arrive dans votre CRM&nbsp;qualifiée.</h1>' +
-    '<p class="lead">BinchamCard capture un contact en huit secondes sans réseau, le qualifie pendant les creux ' +
-      'du salon, calcule un score explicable, et le pousse dans le CRM de l’entreprise. ' +
-      'Le directeur commercial voit en temps réel ce que son équipe ramène, salon par salon.</p>' +
+    '<p class="eyebrow">Capture et qualification de leads en salon</p>' +
+    '<h1>Le scanner est le péage d’entrée, pas la promesse.</h1>' +
+    '<p class="lead">Nos concurrents numérisent la carte. BinchamCard décide quoi en faire : ' +
+      'chaque lead sort avec une valeur affichée, un propriétaire et une échéance — et chaque salon ' +
+      'avec un coût par lead qualifié défendable en comité de direction.</p>' +
     '<div class="ctas">' +
-      '<button type="button" class="btn btn-primary" data-role-go="terrain">Voir le parcours terrain ' + ic("right",15) + '</button>' +
-      '<button type="button" class="link" data-role-go="manager">Voir le pilotage manager <span aria-hidden="true">→</span></button>' +
+      '<button type="button" class="btn btn-primary" data-go="terrain|terrain|pile">' +
+        'Voir le Dévoilement' + ic("right",15) + '</button>' +
+      '<button type="button" class="link" data-go="manager|dashboard|">Voir le pilotage ' +
+        '<span aria-hidden="true">→</span></button>' +
     '</div>' +
     '<div class="herostats">' +
-      '<div><b class="num">8 s</b><span>pour capturer un contact, écriture locale, sans attendre le réseau</span></div>' +
-      '<div><b class="num">' + total + '</b><span>leads dans la démonstration, sur ' + pays + ' pays</span></div>' +
-      '<div><b class="num">' + chauds + '</b><span>leads chauds détectés par le scoring</span></div>' +
-      '<div><b class="num">' + pct(crm, total) + ' %</b><span>déjà synchronisés vers le CRM</span></div>' +
+      '<div><b class="num">' + nf.format(valeur) + '</b><span>points de valeur ramenés, ' +
+        'calculés par une formule publique</span></div>' +
+      '<div><b class="num">' + carnet + '</b><span>contacts au carnet, sur quatre salons</span></div>' +
+      '<div><b class="num">' + chauds + '</b><span>leads chauds, sur ' + pays + ' pays</span></div>' +
+      '<div><b class="num">6</b><span>CRM avec un mapping réel et testable</span></div>' +
     '</div>' +
   '</div>' +
 
-  '<div class="page" style="padding-top:8px">' +
+  '<div class="page" style="padding-top:0">' +
+
+    /* ---- les trois preuves ---- */
+    '<div class="cote"><span class="cote__val">01&nbsp;&nbsp;Trois preuves, trois minutes</span></div>' +
+    '<p class="lead" style="max-width:64ch;margin-bottom:32px">Chaque bouton ouvre l’écran ' +
+      'qui démontre l’argument. Rien n’est raconté sans être montré.</p>' +
+
     '<div class="chartgrid g-auto">' +
-      carteArg("scan", "Capture Éclair", "Le commercial photographie la carte et rend la main en huit secondes. " +
-        "Rien ne dépend du réseau : le lead est acquis dès l’écriture locale. La qualification se fait plus tard, " +
-        "pendant un creux, depuis La Pile.") +
-      carteArg("target", "Scoring explicable", "Chaque point du score est rattaché à un critère lisible : niveau de demande, " +
-        "profil, action de suivi, origine, complétude. Le commercial comprend pourquoi un lead est chaud, " +
-        "l’administrateur ajuste les poids sans développement.") +
-      carteArg("plug", "Export CRM en un clic", "Mapping par défaut fourni pour Salesforce, HubSpot, Dynamics, Pipedrive, " +
-        "Zoho et Odoo, modifiable champ par champ. Déduplication avant écriture, journal de synchronisation, " +
-        "rejeu des échecs. Export fichier universel si le CRM n’est pas connecté.") +
-      carteArg("card", "Carte de visite numérique", "Le commercial partage sa carte par QR ou NFC, y compris hors ligne. " +
-        "Le visiteur laisse ses coordonnées en retour : un lead propre, sans photo ni reconnaissance de texte.") +
-      carteArg("users", "Performance commerciale", "Volume, qualité, délai de relance et taux de transformation par commercial " +
-        "et par salon. Indicateurs de progression, pas de classement punitif.") +
-      carteArg("shield", "Conformité assumée", "Information de la personne au moment de la capture, preuve de consentement, " +
-        "durée de conservation, purge automatique, journal d’audit. Hébergement dans l’Union européenne.") +
+      PREUVES.map(function(p){
+        return '<section class="chart">' +
+          '<div class="eyebrow" style="color:var(--minium)">Preuve ' + p.n + '</div>' +
+          '<h3 style="margin-top:8px">' + esc(p.titre) + '</h3>' +
+          '<p class="hint" style="margin-top:10px">' + esc(p.dit) + '</p>' +
+          '<div class="body" style="margin-top:16px">' +
+            '<p style="font-size:13px;color:var(--ink-3);line-height:1.5;border-left:1px solid var(--line-2);padding-left:12px">' +
+              esc(p.contre) + '</p>' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-go="' + esc(p.aller) + '" style="margin-top:16px">' +
+              esc(p.ou.split(" → ")[0] === "Terrain" ? "Ouvrir le terrain" : "Ouvrir l’export CRM") + '</button>' +
+          '</div>' +
+        '</section>';
+      }).join("") +
     '</div>' +
 
-    '<div class="card card-p" style="margin-top:32px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">' +
-      '<div style="flex:1;min-width:260px">' +
-        '<h3 style="font-size:15px">Prototype interactif</h3>' +
-        '<p style="font-size:13.5px;color:var(--ink-2);margin-top:7px;max-width:70ch">' +
-          'Toutes les vues ci-dessous sont manipulables. Les données sont un jeu de démonstration ' +
-          '(salon ' + esc(SEED.salon.nom) + ', ' + SEED.leads.length + ' leads, ' + SEED.commerciaux.length + ' commerciaux) ' +
-          'stocké dans votre navigateur : vos modifications ne sont visibles que par vous et ne quittent pas votre appareil.' +
+    /* ---- les écarts ---- */
+    '<div class="cote"><span class="cote__val">02&nbsp;&nbsp;Ce que nous faisons et qu’ils ne font pas</span></div>' +
+    '<div class="chartgrid g-auto">' +
+      ECARTS.map(function(e){
+        return '<section class="chart">' +
+          '<h3>' + esc(e[1]) + '</h3>' +
+          '<p class="hint" style="margin-top:10px">' + esc(e[2]) + '</p>' +
+        '</section>';
+      }).join("") +
+    '</div>' +
+
+    /* ---- l'honnêteté sur la démonstration ---- */
+    '<div class="cote"><span class="cote__val">03&nbsp;&nbsp;Ce que cette démonstration est</span></div>' +
+    '<div class="chartgrid g-2">' +
+      '<section class="chart">' +
+        '<h3>Un prototype, et il le dit</h3>' +
+        '<p class="hint" style="margin-top:10px">' +
+          'Toutes les vues sont manipulables. Les données sont un jeu de démonstration — ' +
+          'salon ' + esc(SEED.salon.nom) + ', ' + SEED.leads.length + ' leads, ' +
+          SEED.commerciaux.length + ' commerciaux, ' + carnet + ' contacts au carnet — stocké ' +
+          'dans votre navigateur. Vos modifications ne sont visibles que par vous et ne quittent ' +
+          'pas votre appareil.' +
         '</p>' +
-      '</div>' +
-      '<button type="button" class="btn btn-ghost" id="btn-reset">Réinitialiser la démonstration</button>' +
+        '<p class="hint" style="margin-top:12px">' +
+          'La reconnaissance de texte est scriptée sur des cartes d’exemple : elle tourne côté ' +
+          'serveur dans le produit réel. Nous préférons le dire plutôt que d’afficher un taux ' +
+          'de lecture invérifiable.' +
+        '</p>' +
+        '<div class="body" style="margin-top:16px">' +
+          '<button type="button" class="btn btn-ghost btn-sm" id="btn-reset">Réinitialiser la démonstration</button>' +
+        '</div>' +
+      '</section>' +
+      '<section class="chart">' +
+        '<h3>Par où commencer</h3>' +
+        '<div class="body">' +
+          '<div class="rail">' +
+            [["Commercial", "Le téléphone est interactif. Photographiez, laissez dans La Pile, qualifiez.", "terrain|terrain|"],
+             ["Manager", "Tableau de bord, carnet de contacts, équipe, export CRM, relances.", "manager|dashboard|"],
+             ["Admin", "Bougez les pondérations du scoring : les leads se recalculent devant vous.", "admin|scoring|"]
+            ].map(function(x, i){
+              return '<div class="step on"><div class="n num">' + (i+1) + '</div><div style="flex:1">' +
+                '<h4>' + esc(x[0]) + '</h4><p>' + esc(x[1]) + '</p>' +
+                '<button type="button" class="btn btn-ghost btn-sm" data-go="' + esc(x[2]) + '" style="margin-top:10px">Ouvrir</button>' +
+                '</div></div>';
+            }).join("") +
+          '</div>' +
+        '</div>' +
+      '</section>' +
     '</div>' +
-  '</div>';
-}
-
-function carteArg(icone, titre, texte){
-  return '<div class="chart">' +
-    '<div style="display:flex;align-items:center;gap:9px;color:var(--accent)">' + ic(icone,18) +
-      '<h3 style="color:var(--ink)">' + esc(titre) + '</h3></div>' +
-    '<p style="font-size:13px;color:var(--ink-2);margin-top:10px;line-height:1.6">' + texte + '</p>' +
   '</div>';
 }
 
@@ -8376,6 +8483,19 @@ document.addEventListener("click", function(ev){
   /* --- rôles et navigation --- */
   if ((el = near("[data-role]")))   { setRole(el.dataset.role); return; }
   if ((el = near("[data-role-go]"))){ setRole(el.dataset.roleGo); return; }
+  if ((el = near("[data-go]"))) {
+    // « role|vue|onglet du telephone » : un bouton d argument ouvre
+    // directement l ecran qui le demontre.
+    const p = String(el.dataset.go).split("|");
+    setRole(p[0]);
+    if (p[1]) S.view = p[1];
+    if (p[2]) { S.ptab = p[2]; S.pscreen = null; S.devoile = null; }
+    render();
+    const m = document.getElementById("main");
+    if (m) m.focus({ preventScroll:true });
+    window.scrollTo({ top:0, behavior:"instant" });
+    return;
+  }
   if ((el = near("[data-view]")))   { setView(el.dataset.view); return; }
   if ((el = near("[data-crm-go]"))) { S.crmCible = el.dataset.crmGo; setView("crm"); return; }
   if (near("#btn-reset")) { reinitialiser(); return; }
@@ -8726,8 +8846,8 @@ function poserSol(sol){
   render();
 }
 (function solInitial(){
-  let sol = "dark";
-  try { sol = localStorage.getItem("binchamcard.sol") || "dark"; } catch (e) {}
+  let sol = "light";
+  try { sol = localStorage.getItem("binchamcard.sol") || "light"; } catch (e) {}
   document.documentElement.setAttribute("data-theme", sol);
 })();
 
