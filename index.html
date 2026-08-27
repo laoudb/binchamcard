@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="BinchamCard — le scanner est le peage d entree, pas la promesse. Qualification, valeur mesurable et export CRM auditable.">
+<meta name="description" content="BinchamCard — le scanner est le peage d entree, pas la promesse.">
 <meta name="theme-color" content="#FFFFFF">
 <meta property="og:title" content="BinchamCard">
 <meta property="og:description" content="Chaque lead sort avec une valeur affichee, un proprietaire et une echeance.">
@@ -408,10 +408,23 @@ tbody tr:last-child td{border-bottom:0}
    L'appareil — un boîtier fraisé, pas la photo d'un téléphone.
    Rayon de coque 14 px, une seule élévation, aucune encoche.
    ============================================================ */
-.terrainwrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:48px;align-items:start}
-.phoneside{position:sticky;top:24px}
+.terrainwrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:48px;align-items:start}
+.phoneside{position:sticky;top:24px;display:flex;justify-content:center}
+/* L appareil ne se laisse pas comprimer : sans flex:none, le conteneur le
+   retrecit et le rapport de forme est perdu. */
+.phone,.tablette{flex:none}
+/* L'appareil dérive sa taille de la hauteur RÉELLEMENT disponible, jamais
+   d'une valeur fixe : sur un portable 13 pouces comme sur un 27 pouces, il
+   doit tenir entier sans que le déclencheur soit coupé. La largeur suit le
+   rapport de forme, elle n'est jamais imposée. */
 .phone{
-  width:360px;height:720px;padding:10px;margin:0 auto;
+  /* La largeur est CALCULEE depuis la hauteur, jamais deduite d un
+     aspect-ratio : dans une colonne de grille auto, aspect-ratio cree une
+     dependance circulaire et la colonne s effondre. */
+  --h-appareil:clamp(420px, calc(100dvh - var(--h-chrome, 244px)), 720px);
+  height:var(--h-appareil);
+  width:calc(var(--h-appareil) * 0.5);   /* rapport 360 / 720 */
+  padding:10px;margin:0 auto;
   background:var(--creux);border-radius:20px;
   box-shadow:inset 0 0 0 1px var(--joint), 0 1px 0 rgba(16,17,20,.04), 0 24px 48px -28px rgba(16,17,20,.28)
 }
@@ -862,8 +875,13 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
 /* ============================================================
    La borne, la page d'ouverture, le repli
    ============================================================ */
+/* Même règle que l'appareil : la borne tient entière dans l'écran, quelle
+   que soit la hauteur disponible. */
 .tablette{
-  width:min(480px,100%);aspect-ratio:3/4;padding:12px;margin:0 auto;
+  --h-appareil:clamp(380px, calc(100dvh - var(--h-chrome, 268px)), 660px);
+  height:var(--h-appareil);
+  width:calc(var(--h-appareil) * 0.75);   /* rapport 3 / 4 */
+  padding:12px;margin:0 auto;
   background:var(--creux);border-radius:16px;
   box-shadow:inset 0 0 0 1px var(--joint), 0 24px 48px -28px rgba(16,17,20,.28)
 }
@@ -921,6 +939,11 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
    Repli
    ============================================================ */
 .mobnav{display:none}
+/* Sur les vues qui montrent un appareil, l'en-tête d'écran est compact :
+   chaque pixel rendu par le titre est un pixel gagné par l'appareil. */
+.vue-appareil .page{padding-top:20px;padding-bottom:24px}
+.vue-appareil .pagehead{margin-bottom:20px}
+.vue-appareil .pagehead p{font-size:13px;margin-top:8px;max-width:64ch}
 @media (max-width:1180px){
   .terrainwrap{grid-template-columns:1fr;gap:32px}
   .phoneside{position:static}
@@ -949,7 +972,11 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
   .mobnav .navitem[aria-current="page"] .badge{color:var(--blanc)}
   .page{padding:24px 16px 64px}
   .hero{padding:48px 16px 32px}
-  .phone{width:min(360px,100%);height:auto;aspect-ratio:360/720;max-width:calc(100vw - 32px)}
+  /* Sous 880 px la page défile : l'appareil reprend une largeur pleine. */
+  /* Sous 880 px la page defile : l appareil reprend une largeur pleine. */
+  .phone,.tablette{height:auto;max-width:calc(100vw - 32px)}
+  .phone{width:min(360px,100%);aspect-ratio:360/720}
+  .tablette{width:min(480px,100%);aspect-ratio:3/4}
 }
 @media (max-width:760px){
   .topbar{gap:12px;padding:0 16px}
@@ -6369,7 +6396,10 @@ function render(){
     dashboard: vueDashboard, carnet: vueCarnet, salons: vueSalons, leads: vueLeads, equipe: vueEquipe, crm: vueCRM, relances: vueRelances,
     builder: vueBuilder, scoring: vueScoring, connecteurs: vueConnecteurs, conformite: vueConformite
   };
-  document.getElementById("main").innerHTML = (views[S.view] || vueAccueil)();
+  const m = document.getElementById("main");
+  m.innerHTML = (views[S.view] || vueAccueil)();
+  // Les vues qui montrent un appareil lui rendent de la hauteur.
+  m.classList.toggle("vue-appareil", S.view === "terrain" || S.view === "kiosque");
   cablerVue();
 }
 
@@ -8213,6 +8243,11 @@ function tabletteHTML(){
         ic("card",16) + 'Bincham Industries</span>' +
       '<span style="font-size:11.5px;color:var(--f-texte-3)">' + esc(SEED.salon.nom) + ' · ' + esc(SEED.salon.stand) + '</span>' +
     '</div>' +
+    (e !== "accueil" && e !== "merci"
+      ? '<div style="flex:none;padding:12px 24px 0">' +
+        '<button type="button" class="btn btn-ghost btn-sm bc-appui" data-kback="1">' +
+          '<span aria-hidden="true">←</span> Retour</button></div>'
+      : "") +
     '<div class="kcorps">' + corps() + '</div>' +
     '<div class="kpied">' +
       KIOSQUE_ETAPES.filter(function(x){ return x !== "interet" || S.kiosque.interet; })
@@ -8308,6 +8343,8 @@ function kMerci(){
     '</div>' +
     '<div style="margin-top:26px">' +
       '<button type="button" class="bigbtn bc-appui" data-kgo="accueil">Visiteur suivant</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm bc-appui" data-kback="1" ' +
+        'style="width:100%;margin-top:8px">Corriger la saisie</button>' +
       (S.kiosque.autoReset
         ? '<p style="font-size:11.5px;color:var(--f-texte-3);text-align:center;margin-top:11px">' +
           'Réarmage automatique dans <b id="k-compte" style="color:var(--f-texte)">8</b> secondes</p>'
@@ -9169,6 +9206,25 @@ document.addEventListener("click", function(ev){
     S.kiosque.etape = vers;
     render();
     if (vers === "merci" && S.kiosque.autoReset) armerRearmage();
+    return;
+  }
+  if (near("[data-kback]")) {
+    // Retour d une etape. La saisie est CONSERVEE : un visiteur qui revient
+    // corriger une faute de frappe ne doit pas tout retaper.
+    clearInterval(minuterieKiosque);
+    const suite = ["accueil", "coordonnees"].concat(S.kiosque.interet ? ["interet"] : []).concat(["merci"]);
+    const i = suite.indexOf(S.kiosque.etape);
+    if (i > 0) {
+      // Depuis le remerciement, on retire le lead qui vient d etre cree :
+      // sinon corriger la saisie en fabriquerait un second.
+      if (S.kiosque.etape === "merci" && S.leads.length && String(S.leads[0].id).indexOf("K") === 0) {
+        S.leads.shift();
+        S.kiosque.compteur = Math.max(1, S.kiosque.compteur - 1);
+        sauver();
+      }
+      S.kiosque.etape = suite[i - 1];
+      render();
+    }
     return;
   }
   if ((el = near("[data-kq]"))) {
