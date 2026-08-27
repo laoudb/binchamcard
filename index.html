@@ -1,16 +1,3 @@
-<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="BinchamCard — le scanner est le peage d entree, pas la promesse.">
-<meta name="theme-color" content="#FFFFFF">
-<meta property="og:title" content="BinchamCard">
-<meta property="og:description" content="Chaque lead sort avec une valeur affichee, un proprietaire et une echeance.">
-<meta property="og:type" content="website">
-<style>*{margin:0;padding:0}</style>
-</head>
-<body>
 <title>BinchamCard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -297,7 +284,10 @@ h4{font-family:var(--f-ui);font-weight:600;font-size:15px;line-height:1.3;margin
 }
 .kpi,button.kpi{
   padding:20px 24px 20px 0;display:flex;flex-direction:column;gap:8px;
-  background:none;border:0;text-align:left;min-height:96px
+  background:none;border:0;text-align:left;min-height:96px;
+  /* Sans min-width:0 la colonne 1fr prend la largeur intrinseque du
+     nombre : deux colonnes deviennent inegales et debordent. */
+  min-width:0
 }
 .kpigrid > * + *{border-left:1px solid var(--joint);padding-left:24px}
 button.kpi{width:100%;font:inherit;cursor:pointer;border-radius:0;transition:background 180ms var(--sortie)}
@@ -421,7 +411,7 @@ tbody tr:last-child td{border-bottom:0}
   /* La largeur est CALCULEE depuis la hauteur, jamais deduite d un
      aspect-ratio : dans une colonne de grille auto, aspect-ratio cree une
      dependance circulaire et la colonne s effondre. */
-  --h-appareil:clamp(420px, calc(100dvh - var(--h-chrome, 244px)), 720px);
+  --h-appareil:clamp(300px, calc(100dvh - var(--h-chrome, 244px)), 720px);
   height:var(--h-appareil);
   width:calc(var(--h-appareil) * 0.5);   /* rapport 360 / 720 */
   padding:10px;margin:0 auto;
@@ -639,14 +629,6 @@ tbody tr:last-child td{border-bottom:0}
   color:var(--verm-e);font-variant-numeric:tabular-nums}
 .gain-gros{font:300 96px/1 var(--f-mono);letter-spacing:-.02em;color:var(--encre);
   font-variant-numeric:tabular-nums}
-.defi{display:flex;gap:12px;align-items:flex-start;padding:14px 0;
-  border-bottom:1px solid var(--joint);background:none}
-.defi:last-child{border-bottom:0}
-.defi .dcase{width:16px;height:16px;flex:none;margin-top:2px;display:grid;place-items:center;
-  border-radius:2px;box-shadow:inset 0 0 0 1.5px var(--encre3);color:transparent}
-.defi.fait .dcase{background:var(--encre);box-shadow:none;color:var(--blanc)}
-.defi .dn{font:600 15px/1.3 var(--f-ui);letter-spacing:-.008em}
-.defi .da{font-size:13px;color:var(--encre3c);margin-top:3px;line-height:1.45}
 
 .pouls{display:flex;flex-direction:column}
 .pouls .pl{display:flex;align-items:center;gap:12px;padding:0 12px;height:44px;
@@ -657,15 +639,6 @@ tbody tr:last-child td{border-bottom:0}
 .pouls .pl .pq b{color:var(--encre);font-weight:600}
 .pouls .pl .pt{font:400 13px/1 var(--f-mono);color:var(--encre3);flex:none}
 
-.podium{display:flex;flex-direction:column;background:var(--blanc)}
-.pod{display:grid;grid-template-columns:44px 1fr 96px;align-items:center;gap:16px;
-  height:64px;border-bottom:1px solid var(--joint);padding:0;text-align:left;background:none}
-.pod.p1{box-shadow:inset 0 -2px 0 var(--verm)}
-.pod .rang{font:400 30px/1 var(--f-mono);color:var(--encre3);font-variant-numeric:tabular-nums;
-  letter-spacing:-.02em}
-.pod.p1 .rang{color:var(--encre)}
-.pod .pnom{font:600 17px/1.2 var(--f-ui);letter-spacing:-.012em}
-.pod .ppts{font:400 20px/1 var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
 </style>
 <style>
 /* ============================================================
@@ -779,7 +752,6 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
 .dev-score{font:300 96px/1 var(--f-mono);letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;color:var(--encre);display:block}
 .dev-sur{font:400 20px/1 var(--f-mono);color:var(--encre3)}
-.dev-palier{font:600 11px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--encre2)}
 
 /* ------------------------------------------------------------
    La gouttière d'état — greffe LA MAISON.
@@ -805,7 +777,7 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
   transform:translateY(1px)
 }
 /* les chiffres ne sautent jamais de largeur pendant qu'ils montent */
-.val,.vv,.ppts,.rang,.herostats b,.scorebadge b,.kpi .val{font-variant-numeric:tabular-nums lining-nums}
+.val,.vv,.herostats b,.scorebadge b,.kpi .val{font-variant-numeric:tabular-nums lining-nums}
 /* le trait sous un lien se trace, il n'apparaît pas */
 .hero .link{position:relative}
 .hero .link::after{content:'';position:absolute;left:8px;right:8px;bottom:4px;height:1px;
@@ -878,7 +850,7 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
 /* Même règle que l'appareil : la borne tient entière dans l'écran, quelle
    que soit la hauteur disponible. */
 .tablette{
-  --h-appareil:clamp(380px, calc(100dvh - var(--h-chrome, 268px)), 660px);
+  --h-appareil:clamp(280px, calc(100dvh - var(--h-chrome, 268px)), 660px);
   height:var(--h-appareil);
   width:calc(var(--h-appareil) * 0.75);   /* rapport 3 / 4 */
   padding:12px;margin:0 auto;
@@ -986,7 +958,20 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
   .roleswitch button{flex:0 0 auto}
   .brand span:first-of-type{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
+/* Sous 560 px de haut, meme un appareil au plancher ne tient plus dans la
+   coque figee : la page reprend le defilement plutot que de rogner l appareil.
+   La regle « tenir sur un ecran » vaut pour un ecran, pas pour une fente. */
+@media (max-height:560px){
+  html,body{overflow:auto}
+  .app{height:auto;min-height:100dvh;overflow:visible}
+  .main{overflow:visible}
+}
+
+/* Le nombre passe a 30 px : a 375 px de large, deux colonnes de KPI ne
+   peuvent pas porter un 38 px sans deborder. */
 @media (max-width:640px){
+  .kpi .val,.kpigrid > :first-child .val{font-size:30px}
+  
   .kpigrid{grid-template-columns:1fr 1fr}
   .kpigrid > *{border-left:1px solid var(--joint);padding-left:20px;min-height:0}
   .kpigrid > :nth-child(odd){border-left:0;padding-left:0}
@@ -6033,19 +6018,19 @@ function toast(msg, type){
 }
 
 /* ============================================================
-   Valeur, rangs et progression — conforme à docs/DOPAMINE.md.
+   LES MESURES — conforme à docs/MESURES.md
 
-   Une seule monnaie dans tout le produit : la VALEUR du lead. Elle porte
-   un nom métier, pas un nom de jeu. Elle ne s'achète pas, ne se dépense
-   pas, ne se perd jamais.
+   Il n'y a plus de points, plus de rangs, plus de monnaie interne.
+   On vend à des professionnels : la seule unité qui traverse le produit,
+   du stand au comité de direction, est le LEAD QUALIFIÉ.
 
-   La capture nue vaut ZÉRO. C'est le point de bascule du système :
-   payer le scan fabrique du scan, et pollue exactement la base que le
-   CRM est censé recevoir. Seule la qualification paie.
+   La motivation ne disparaît pas pour autant — elle change de nature.
+   « Cette capture vaut 0 point » devient « une capture ne compte pas
+   dans le chiffre du jour ». Et au lieu d'annoncer un gain, on annonce
+   une CONSÉQUENCE : « Chaud — devis dû le vendredi 19 juin, 12 h. »
    ============================================================ */
 
-/** Contributions absolues au score, par critère. Les deltas du
- *  « point manquant » en sont dérivés. */
+/* ---- le barème de qualification : conservé tel quel, ce n'est pas du jeu ---- */
 const CONTRIB = {
   niveau:  { poids:30, r:{ "Projet budgété":1, "Appel d'offres en cours":.88, "Projet à l'étude":.6,
                            "Renouvellement parc":.47, "Veille technologique":.15 } },
@@ -6058,127 +6043,125 @@ const CONTRIB = {
                            "Conférence exposant":.53, "Passage sur stand":.4 } }
 };
 const SEUILS_BANDE = [60, 75];
+const CRITERES_QUALIF = ["origine", "profil", "niveau", "suivi"];
 
-/** Un canal de contact valide : sans lui, la fiche n'est pas exploitable. */
-function canalValide(l){ return !!((l.email && l.email.trim()) || (l.tel && l.tel.trim())); }
+/* ============================================================
+   ANNEXE A — définition du lead qualifié, v1.
+   Toute évolution crée une v2 : datée, publiée, jamais appliquée
+   rétroactivement à une période déjà présentée en comité.
+   ============================================================ */
+function emailExploitable(l){
+  return !!(l.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(l.email).trim()));
+}
+function qualifie(l){
+  return emailExploitable(l)
+      && CRITERES_QUALIF.every(function(k){ return l[k] && String(l[k]).trim(); })
+      && (l.score || 0) >= 60
+      && l.consentement === true;
+}
+/** Prête pour le CRM : qualifiée ET complète sur les cinq champs. */
+function pretCRM(l){ return qualifie(l) && completude(l) === 1; }
 
-/**
- * Valeur d'un lead.
- *   V = clamp( round( (10 + S) × m_c × m_f × m_s ) + bonus , 15 , 180 )
- * `Math.round` est bien l'arrondi au demi supérieur exigé par la
- * spécification : 142,5 donne 143.
- */
-function valeurLead(l){
-  if (l.disqualifie) return { V:15, base:15, mc:1, mf:1, ms:1, bonus:0, detail:["Contact disqualifié — valeur plancher"] };
+/** Définition v0, rétrospective : les éditions closes ne portent ni les
+ *  critères ni le score. Seule condition vérifiable, et on l'étiquette. */
+function qualifieV0(c){ return emailExploitable(c); }
 
-  const S = typeof l.score === "number" ? l.score : scoreDetail(l).total;
-
-  const complet = completude(l) === 1;
-  const canal = canalValide(l);
-  const mc = !canal ? 0.50 : (complet ? 1.25 : 1.00);
-
-  const d = typeof l.qualifieEn === "number" ? l.qualifieEn : 60;
-  const mf = d <= 20 ? 1.20 : (d <= 720 ? 1.00 : 0.85);
-
-  const n = typeof l.serie === "number" ? l.serie : 0;
-  const ms = 1 + 0.05 * Math.min(Math.max(n - 2, 0), 6);
-
-  let bonus = 0;
-  const detail = [];
-  if (l.note && l.note.trim()) { bonus += 8; detail.push("note vocale +8"); }
-  if (l.verso) { bonus += 5; detail.push("verso rattaché +5"); }
-  if (l.fusionne) { bonus += 6; detail.push("doublon fusionné +6"); }
-
-  const V = clamp(Math.round((10 + S) * mc * mf * ms) + bonus, 15, 180);
-  return { V:V, S:S, base:10 + S, mc:mc, mf:mf, ms:ms, bonus:bonus, detail:detail, complet:complet, canal:canal };
+function mediane(a){
+  const v = a.filter(function(x){ return typeof x === "number" && isFinite(x); }).sort(function(x,y){ return x-y; });
+  if (!v.length) return 0;
+  const m = Math.floor(v.length / 2);
+  return v.length % 2 ? v[m] : Math.round((v[m-1] + v[m]) / 2);
+}
+function percentile(a, p){
+  const v = a.filter(function(x){ return typeof x === "number" && isFinite(x); }).sort(function(x,y){ return x-y; });
+  if (!v.length) return 0;
+  return v[clamp(Math.ceil(v.length * p) - 1, 0, v.length - 1)];
 }
 
-/** Ligne de valeur affichée après le Dévoilement : chaque facteur nommé. */
-function ligneValeur(v){
-  const p = [nf.format(v.base) + " base"];
-  if (v.mc !== 1) p.push((v.mc === 1.25 ? "complet" : "sans canal de contact") + " ×" + String(v.mc).replace(".", ","));
-  if (v.mf !== 1) p.push((v.mf === 1.2 ? "à chaud" : "rattrapage") + " ×" + String(v.mf).replace(".", ","));
-  if (v.ms !== 1) p.push("série ×" + v.ms.toFixed(2).replace(".", ","));
-  v.detail.forEach(function(x){ p.push(x); });
-  return p.join(" · ");
-}
+/* ============================================================
+   T7 — la réponse due. C'est ce qui remplace la ligne de valeur :
+   une conséquence datée, pas un gain chiffré.
+   ============================================================ */
+const DELAI_BANDE = { "Chaud":2, "Tiède":5, "Froid":15 };   /* jours ouvrés */
+const JOURS_FR = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+const MOIS_FR  = ["janvier","février","mars","avril","mai","juin","juillet","août",
+                  "septembre","octobre","novembre","décembre"];
 
-/* ------------------------------------------------------------
-   Rangs — calibrés sur des années, jamais sur une semaine.
-   Des noms de portefeuille, pas des noms de personnage : « Recrue »
-   et « Légende » sont exactement le vocabulaire qui fait fermer
-   l'application à un vendeur de 45 ans.
-   ------------------------------------------------------------ */
-const RANGS = [
-  { seuil:0,      nom:"Terrain" },
-  { seuil:2500,   nom:"Stand" },
-  { seuil:6300,   nom:"Carnet" },
-  { seuil:19000,  nom:"Pipeline" },
-  { seuil:38000,  nom:"Portefeuille" },
-  { seuil:95000,  nom:"Référence" },
-  { seuil:190000, nom:"Tableau de chasse" }
-];
-const VALEUR_FICHE_MOYENNE = 85;
-const OBJECTIF_JOUR = 18;
-const CIBLE_VALEUR_JOUR = OBJECTIF_JOUR * VALEUR_FICHE_MOYENNE;   /* 1 530 */
-const PALIERS = [0.25, 0.5, 0.75, 1];
-
-/** Valeur ramenée sur ce salon. */
-function valeurSalon(id){
-  return S.leads.filter(function(l){ return l.commercial === id; })
-                .reduce(function(s,l){ return s + valeurLead(l).V; }, 0);
-}
-/** Valeur cumulée de carrière : salons précédents + celui-ci. */
-function valeurCumulee(id){
-  const c = byId(SEED.commerciaux, id);
-  return (c && c.valeurAnterieure ? c.valeurAnterieure : 0) + valeurSalon(id);
-}
-
-function rangDe(v){
-  let i = 0;
-  for (let k = 0; k < RANGS.length; k++) if (v >= RANGS[k].seuil) i = k;
-  const a = RANGS[i], b = RANGS[i + 1] || null;
+function reponseDue(l){
+  const base = new Date((l.date || "2026-06-17") + "T12:00:00");
+  let reste = DELAI_BANDE[l.statut] != null ? DELAI_BANDE[l.statut] : 5;
+  const d = new Date(base.getTime());
+  while (reste > 0) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0 && d.getDay() !== 6) reste--;   /* jours ouvrés */
+  }
   return {
-    index:i + 1, nom:a.nom, suivant:b ? b.nom : null, valeur:v,
-    restant: b ? b.seuil - v : 0,
-    progression: b ? clamp((v - a.seuil) / (b.seuil - a.seuil), 0, 1) : 1
+    date: d,
+    texte: JOURS_FR[d.getDay()] + " " + d.getDate() + " " + MOIS_FR[d.getMonth()] + ", 12 h",
+    action: l.suivi || "Reprise de contact"
   };
 }
 
-/** La journée en cours, en volume ET en valeur — les deux arcs. */
+/* ============================================================
+   Le chiffre du jour, côté commercial. Trois chiffres primaires,
+   pas un de plus. Aucun euro, aucun coût n'atteint cet écran.
+   ============================================================ */
+const JOUR_COURANT = "2026-06-17";
+const CONTACTS_ATTENDUS = 4;   /* dérivé : objectif de leads qualifiés / taux constaté */
+
+function mesLeads(id, jour){
+  return S.leads.filter(function(l){
+    return l.commercial === id && (!jour || l.date === jour);
+  });
+}
 function journee(id){
-  const jour = "2026-06-17";
-  const dujour = S.leads.filter(function(l){ return l.commercial === id && l.date === jour; });
+  const duJour = mesLeads(id, JOUR_COURANT);
+  const q = duJour.filter(qualifie);
+  const ages = S.pile.map(function(p){
+    const m = String(p.capture || "").match(/(\d+)\s*(min|h)/);
+    if (!m) return 0;
+    return m[2] === "h" ? +m[1] * 60 : +m[1];
+  });
   return {
-    captures: dujour.length,
-    valeur: dujour.reduce(function(s,l){ return s + valeurLead(l).V; }, 0),
-    chauds: dujour.filter(function(l){ return l.statut === "Chaud"; }).length,
-    complets: dujour.filter(function(l){ return completude(l) === 1; }).length,
-    objectif: OBJECTIF_JOUR, cible: CIBLE_VALEUR_JOUR,
-    aQualifier: S.pile.length
+    contacts: duJour.length,
+    attendus: CONTACTS_ATTENDUS,
+    qualifies: q.length,
+    chauds: duJour.filter(function(l){ return (l.score || 0) >= 75; }).length,
+    pretsCRM: duJour.filter(pretCRM).length,
+    delaiMedian: mediane(duJour.map(function(l){ return l.qualifieEn; })),
+    aQualifier: S.pile.length,
+    plusAncienne: ages.length ? Math.max.apply(null, ages) : 0
   };
 }
-
-function record(id){
+/** T11 — la meilleure journée, en contacts enregistrés. */
+function meilleureJournee(id){
   const parJour = {};
-  S.leads.filter(function(l){ return l.commercial === id; })
-         .forEach(function(l){ parJour[l.date] = (parJour[l.date] || 0) + valeurLead(l).V; });
+  mesLeads(id).forEach(function(l){ parJour[l.date] = (parJour[l.date] || 0) + 1; });
   const v = Object.keys(parJour).map(function(k){ return parJour[k]; });
   return v.length ? Math.max.apply(null, v) : 0;
 }
+/** T10 — l'état de service : ce qu'un commercial peut citer en entretien annuel. */
+function carnetPersonnel(id){
+  const h = (SEED.historique || []).filter(function(x){ return x.commercial === id; });
+  const c = byId(SEED.commerciaux, id);
+  return {
+    salons: (c && c.salonsFaits) ? c.salonsFaits : 0,
+    contacts: h.length,
+    opportunites: h.filter(function(x){ return x.opportunite; }).length,
+    montant: h.reduce(function(s,x){ return s + (x.montant || 0); }, 0)
+  };
+}
 
-/* ------------------------------------------------------------
-   Le point manquant — le remède en un tap.
-   `gain` est un DELTA, jamais une contribution absolue : passer de
-   « Envoi documentation » (0,40) à « Devis sous 48 h » (1,00) sur un
-   critère de 20 points vaut +12, pas +20. Confondre les deux, c'est
-   promettre un gain qui n'arrivera pas.
-   ------------------------------------------------------------ */
-function pointManquant(l){
+/* ============================================================
+   Ce qu'il manque — l'algorithme du delta minimal est inchangé.
+   Seul le texte change : plus un mot de « point » de jeu, on parle
+   d'écart à la bande.
+   ============================================================ */
+function gesteManquant(l){
   const S0 = typeof l.score === "number" ? l.score : scoreDetail(l).total;
   const seuil = SEUILS_BANDE.filter(function(s){ return s > S0; }).sort(function(a,b){ return a-b; })[0];
   if (!seuil) return null;
-  const deficit = seuil - S0;
+  const ecart = seuil - S0;
 
   const cand = [];
   Object.keys(CONTRIB).forEach(function(cle){
@@ -6186,75 +6169,94 @@ function pointManquant(l){
     const actuel = c.r[l[cle]] != null ? c.r[l[cle]] : 0;
     Object.keys(c.r).forEach(function(v){
       const delta = Math.floor(c.poids * (c.r[v] - actuel));
-      if (delta >= deficit) cand.push({ type:"champ", cle:cle, valeur:v, gain:delta, cout:1,
+      if (delta >= ecart) cand.push({ type:"champ", cle:cle, valeur:v, gain:delta, cout:1,
         texte:LBL_CRIT[cle] + " : « " + v + " »" });
     });
   });
-  // Complétude : +3 par champ, coût de saisie plus élevé (clavier)
   CHAMPS_COMPLETUDE.forEach(function(k){
     if (!l[k] || !String(l[k]).trim()) {
-      if (3 >= deficit) cand.push({ type:"complet", cle:k, gain:3, cout:2,
-        texte:"Complétude : renseigner " + LBL_COMPLET[k] });
+      if (3 >= ecart) cand.push({ type:"complet", cle:k, gain:3, cout:2,
+        texte:"Renseigner " + LBL_COMPLET[k] });
     }
   });
   if (!cand.length) {
-    return { multiple:true, deficit:deficit, seuil:seuil,
-             texte:"Il manque " + deficit + " point" + (deficit>1?"s":"") + " — plusieurs champs à renseigner." };
+    return { multiple:true, ecart:ecart, seuil:seuil,
+      texte:"À " + ecart + " de la bande " + statutDe(seuil) + ". Plusieurs champs à renseigner." };
   }
-  // le plus petit gain suffisant, départagé par coût de saisie
   cand.sort(function(a,b){ return (a.gain - b.gain) || (a.cout - b.cout); });
   const g = cand[0];
   return {
-    multiple:false, deficit:deficit, seuil:seuil, choix:g,
-    texte:"Il manque " + deficit + " point" + (deficit>1?"s":"") + ". " + g.texte +
-          " → +" + g.gain + ", soit " + (S0 + g.gain) + ", " + statutDe(S0 + g.gain) + "."
+    multiple:false, ecart:ecart, seuil:seuil, choix:g,
+    texte:"À " + ecart + " de la bande " + statutDe(seuil) + ". " + g.texte +
+          " → " + (S0 + g.gain) + " / 100, " + statutDe(S0 + g.gain) + "."
   };
 }
-const LBL_CRIT = { niveau:"Niveau de demande", profil:"Profil société", suivi:"Action de suivi", origine:"Origine" };
+/* nom conservé pour les appels existants */
+function pointManquant(l){ return gesteManquant(l); }
+
+const LBL_CRIT = { niveau:"Niveau de demande", profil:"Profil société",
+                   suivi:"Action de suivi", origine:"Origine du contact" };
 const LBL_COMPLET = { email:"l'e-mail", tel:"le téléphone", fonction:"la fonction",
                       machine:"la machine", produit:"le produit" };
 
-/* ------------------------------------------------------------
-   Défis du jour — trois, tous sur la qualité.
-   ------------------------------------------------------------ */
-function defisDuJour(id){
-  const j = journee(id);
+/* ============================================================
+   Ce qui remplace les défis : le travail non fini, nommé et ventilé
+   par cause. Chaque ligne ouvre la fiche sur le champ manquant.
+   ============================================================ */
+function aBoucler(id){
+  const duJour = mesLeads(id, JOUR_COURANT);
+  const sansEmail = duJour.filter(function(l){ return !emailExploitable(l); });
+  const sousBande = duJour.filter(function(l){ return emailExploitable(l) && (l.score || 0) < 60; });
+  const nonTransmis = duJour.filter(function(l){ return qualifie(l) && !l.crm; });
   return [
-    { nom:"Vider La Pile avant la fermeture", fait: Math.max(0, 5 - j.aQualifier), sur:5,
-      aide:"Une capture non qualifiée le soir ne vaut rien : elle n’a pas de valeur tant qu’elle n’est pas notée." },
-    { nom:"5 fiches complètes", fait: Math.min(j.complets, 5), sur:5,
-      aide:"La complétude multiplie la valeur par 1,25. C’est le levier le moins cher de la journée." },
-    { nom:"3 leads chauds identifiés", fait: Math.min(j.chauds, 3), sur:3,
-      aide:"Un chaud complet vaut 119 points, un froid 56. C’est là que se joue la cible." }
+    { nom:"Prises à qualifier", n:S.pile.length,
+      aide:S.pile.length ? "Une prise non qualifiée ne compte pas dans le chiffre du jour." : "La Pile est vide.",
+      aller:"pile" },
+    { nom:"Fiches sans e-mail exploitable", n:sansEmail.length,
+      aide:"Sans e-mail, aucune relance ne peut partir : la fiche ne compte pas comme lead qualifié.",
+      aller:"mesleads" },
+    { nom:"Sous la bande Tiède", n:sousBande.length,
+      aide:"Un critère de plus fait souvent basculer la fiche.", aller:"mesleads" },
+    { nom:"Qualifiées, pas encore transmises", n:nonTransmis.length,
+      aide:"Objectif : zéro à la fermeture du stand.", aller:"mesleads" }
   ];
 }
 
-/* ------------------------------------------------------------
-   Collectif
-   ------------------------------------------------------------ */
-function podium(){
-  return SEED.commerciaux.map(function(c){
-    const mien = S.leads.filter(function(l){ return l.commercial === c.id; });
-    const vs = valeurSalon(c.id);
+/* ============================================================
+   La contribution de l'équipe.
+   Tri ALPHABÉTIQUE, jamais par performance — un classement public
+   démotive les trois quarts d'une équipe. La médiane sert de repère.
+   ============================================================ */
+function contributionEquipe(){
+  const l = SEED.commerciaux.map(function(c){
+    const mien = mesLeads(c.id);
+    const q = mien.filter(qualifie);
     return {
-      c:c, pts:vs, cumul:valeurCumulee(c.id), leads:mien.length,
-      chauds:mien.filter(function(l){ return l.statut === "Chaud"; }).length,
-      niveau:rangDe(valeurCumulee(c.id))
+      c:c, contacts:mien.length, qualifies:q.length,
+      taux: pct(q.length, mien.length),
+      pretsCRM: mien.filter(pretCRM).length,
+      chauds: mien.filter(function(x){ return (x.score||0) >= 75; }).length,
+      delai: mediane(mien.map(function(x){ return x.qualifieEn; })),
+      carnet: carnetPersonnel(c.id)
     };
-  }).sort(function(a,b){ return b.pts - a.pts; });
+  });
+  l.sort(function(a,b){ return a.c.nom.localeCompare(b.c.nom, "fr"); });
+  const med = mediane(l.map(function(x){ return x.qualifies; }));
+  return { lignes:l, medianeQualifies:med };
 }
 
+/* ============================================================
+   Le pouls : ce que l'équipe vient de faire. Sans chiffre de gain.
+   ============================================================ */
 function pouls(n){
   return S.leads
-    .filter(function(l){ return l.statut === "Chaud" || completude(l) === 1; })
+    .filter(function(l){ return qualifie(l); })
     .slice(0, n || 6)
     .map(function(l, i){
       const c = byId(SEED.commerciaux, l.commercial);
       return {
-        c:c, lead:l, pts:valeurLead(l).V, quand:(i * 4 + 2) + " min",
-        quoi: l.statut === "Chaud"
-          ? "a qualifié un lead chaud chez " + l.societe
-          : "a bouclé une fiche complète chez " + l.societe
+        c:c, lead:l, quand:(i * 4 + 2) + " min",
+        quoi: (l.score >= 75 ? "a qualifié un lead chaud chez " : "a qualifié un lead chez ") + l.societe
       };
     });
 }
@@ -6495,7 +6497,7 @@ const VISIONS = [
     ou: "Assis, pendant et après le salon",
     question: "Qu'est-ce que mon équipe ramène vraiment, et combien ça vaut ?",
     ecrans: ["Tableau de bord", "Le carnet", "Par salon", "Leads", "Équipe", "Export CRM", "Relances"],
-    fait: "Il voit la valeur ramenée en direct, le pouls de l'équipe et le podium. Il compare " +
+    fait: "Il voit les leads qualifiés arriver en direct, la contribution de chacun, et il compare " +
           "les quatre éditions sur leur coût par lead qualifié — le seul chiffre qui permet " +
           "d'arbitrer un budget salon devant un comité de direction. Puis il pousse au CRM.",
     aller: "manager|dashboard|"
@@ -6517,7 +6519,7 @@ function vueAccueil(){
   const chauds = L.filter(function(l){ return l.statut === "Chaud"; }).length;
   const pays = uniq(L.map(function(l){ return l.pays; })).length;
   const carnet = (typeof carnetComplet === "function") ? carnetComplet().length : L.length;
-  const valeur = L.reduce(function(s,l){ return s + valeurLead(l).V; }, 0);
+  const qualifies = L.filter(qualifie).length;
 
   return '' +
   '<div class="hero">' +
@@ -6533,8 +6535,8 @@ function vueAccueil(){
         '<span aria-hidden="true">→</span></button>' +
     '</div>' +
     '<div class="herostats">' +
-      '<div><b class="num">' + nf.format(valeur) + '</b><span>points de valeur ramenés, ' +
-        'calculés par une formule publique</span></div>' +
+      '<div><b class="num">' + qualifies + '</b><span>leads qualifiés sur ' + L.length +
+        ' contacts enregistrés</span></div>' +
       '<div><b class="num">' + carnet + '</b><span>contacts au carnet, sur quatre salons</span></div>' +
       '<div><b class="num">' + chauds + '</b><span>leads chauds, sur ' + pays + ' pays</span></div>' +
       '<div><b class="num">6</b><span>CRM avec un mapping réel et testable</span></div>' +
@@ -6725,16 +6727,6 @@ function phoneHTML(){
 /* L'écran « Mon salon » est défini dans 04b-salon.js. */
 
 
-/* Les paliers sont annonces avec des mots d adulte : un commercial de
-   45 ans qui tient un stand depuis 9 heures n a pas besoin d etre felicite
-   comme un enfant, il a besoin de savoir ou il en est. */
-const TEXTE_PALIER = {
-  1: "Un quart de la cible du jour",
-  2: "Mi-parcours",
-  3: "Trois quarts de la cible",
-  4: "Cible du jour atteinte"
-};
-
 /* ---------- écran : Capture ---------- */
 /** La carte montree dans le viseur est fabriquee a partir de la capture
  *  qui sera reellement ajoutee a La Pile. Les deux listes ne peuvent donc
@@ -6758,22 +6750,23 @@ function carteDuViseur(i){
 
 function pCapture(){
   if (S.capturing) {
-    // Aucun point n'est affiche ici. La capture nue vaut zero : c'est la
-    // qualification qui paie. La tuile part face cachee dans La Pile.
+    // Aucun chiffre de gain ici. La capture n est pas une recompense :
+    // c est un ticket que la qualification transformera, ou pas.
     return '<div class="viewfinder"><div class="captured">' +
-      '<div class="ok bc-pop">' + ic("layers",28) + '</div>' +
-      '<div style="font-size:16px;font-weight:600;color:#fff">Prise n° ' +
+      '<div class="ok bc-pop">' + ic("layers",26) + '</div>' +
+      '<div style="font:600 17px/1.3 var(--f-ui);color:#FFFFFF">Prise n° ' +
         String(S.pile.length).padStart(3, "0") + '</div>' +
-      '<p style="font-size:12.5px;color:var(--encre-2);margin-top:8px;max-width:27ch;line-height:1.55">' +
+      '<p style="font:400 13px/1.5 var(--f-ui);color:#A3A9B1;margin-top:8px;max-width:28ch">' +
         'Enregistrée sur l’appareil, en attente dans La Pile.</p>' +
-      '<div class="bc-face-cachee" style="margin-top:16px">' +
-        '<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--encre-3);font-weight:600">Valeur</span>' +
-        '<div style="font-size:19px;font-weight:700;color:var(--encre);margin-top:3px;font-variant-numeric:tabular-nums">entre 15 et 180</div>' +
-        '<div style="font-size:11px;color:var(--encre-3);margin-top:3px">révélée à la qualification</div>' +
+      '<div class="bc-face-cachee" style="margin-top:20px">' +
+        '<span style="font:600 11px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5)">Contact enregistré</span>' +
+        '<div style="font:400 15px/1.4 var(--f-ui);color:rgba(255,255,255,.85);margin-top:6px">' +
+          'Il ne compte pas encore<br>dans les leads qualifiés</div>' +
       '</div>' +
-      '<p style="font-size:11px;color:var(--encre-3);margin-top:16px">Viseur réarmé.</p>' +
+      '<p style="font:400 11px/1 var(--f-mono);color:rgba(255,255,255,.4);margin-top:20px">Viseur réarmé.</p>' +
     '</div></div>';
   }
+
   const carte = carteDuViseur(S.shot);
   return '<div class="viewfinder">' +
     '<div class="vfscene" aria-hidden="true"></div>' +
@@ -7012,129 +7005,121 @@ function pSync(){
 }
 
 /* ============================================================
-   Écran d'accueil terrain — « Mon salon ».
+   « Mon salon » — l'écran que le commercial ouvre vingt fois par jour.
 
-   C'est l'écran que le commercial ouvre vingt fois par jour entre deux
-   visiteurs. Il doit répondre à trois questions en trois secondes :
-   où j'en suis, ce qu'il me reste à faire, et ce que ça m'a rapporté.
-   Tout le reste est du bruit.
+   Trois chiffres primaires, pas un de plus. Aucun euro, aucun coût,
+   aucun budget n'atteint ce parcours : ce n'est pas son métier, et lui
+   mettre le coût du stand sous les yeux ne le fera pas travailler mieux.
+
+   Le chiffre héros n'est plus une monnaie de jeu : c'est le nombre de
+   LEADS QUALIFIÉS. C'est la même unité du stand au comité de direction.
    ============================================================ */
 function pSalon(){
   const moi = byId(SEED.commerciaux, S.me);
   const j = journee(S.me);
-  const cumul = valeurCumulee(S.me);
-  const nv = rangDe(cumul);
-  const salon = valeurSalon(S.me);
-  const rec = record(S.me);
-  const defis = defisDuJour(S.me);
-  const capturesJour = j.captures + S.shot;
-  const prog = clamp(capturesJour / j.objectif, 0, 1);
-  const progValeur = clamp(j.valeur / j.cible, 0, 1);
-  const paliersFranchis = PALIERS.filter(function(x){ return progValeur >= x; }).length;
+  const contacts = j.contacts + S.shot;
+  const carnet = carnetPersonnel(S.me);
+  const record = meilleureJournee(S.me);
+  const taches = aBoucler(S.me);
+  const restant = taches.reduce(function(s,t){ return s + t.n; }, 0);
+  const progC = clamp(contacts / j.attendus, 0, 1);
+  const progQ = clamp(j.qualifies / j.attendus, 0, 1);
 
   return '<div class="psec bc-cascade">' +
 
-    /* ---- identité et niveau ---- */
-    '<div class="niveau" style="margin-bottom:16px">' +
-      '<div class="nv num">' + nv.index + '</div>' +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
-          '<span style="font-size:13.5px;font-weight:600;color:var(--f-texte)">' + esc(nv.nom) + '</span>' +
-          '<span class="gain"><span data-compteur="' + cumul + '" data-duree="800">0</span> pts</span>' +
-        '</div>' +
-        '<div class="jauge" style="margin-top:6px"><i style="width:' + (nv.progression*100).toFixed(1) + '%"></i></div>' +
-        '<div style="font-size:10.5px;color:var(--f-texte-3);margin-top:5px">' +
-          (nv.suivant
-            ? nf.format(nv.restant) + " points avant le rang « " + esc(nv.suivant) + " »"
-            : "Rang le plus haut atteint") +
-        '</div>' +
-      '</div>' +
+    /* ---- état de service : ce qu'on peut citer en entretien annuel ---- */
+    '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px">' +
+      '<h2 style="font-family:var(--f-titre);font-weight:500;font-size:24px;letter-spacing:-.018em">' +
+        esc(moi.nom.split(" ")[0]) + '</h2>' +
+      '<span class="estampille">Jour 3 sur 5</span>' +
     '</div>' +
+    '<p style="font:400 11px/1.5 var(--f-mono);color:var(--encre3c);margin-bottom:20px">' +
+      carnet.salons + ' salons · ' + carnet.contacts + ' contacts au carnet · ' +
+      carnet.opportunites + ' opportunités · ' + nf.format(carnet.montant) + ' €</p>' +
 
-    /* ---- le chiffre du jour, en héros ---- */
-    '<div class="pcard" style="padding:18px 16px 16px">' +
-      '<div style="display:flex;align-items:center;gap:16px">' +
+    /* ---- le double arc : contacts dehors, leads qualifiés dedans ---- */
+    '<div class="pcard" style="padding:20px 16px">' +
+      '<div style="display:flex;align-items:center;gap:20px">' +
         '<div style="position:relative;width:104px;height:104px;flex:none">' +
-          /* Deux arcs concentriques : le volume dehors, la valeur dedans.
-             C est le seul endroit du produit qui montre que la qualite
-             depasse le volume — l arc interieur peut devancer l exterieur. */
-          '<div style="position:absolute;inset:0">' + anneau(prog, 104, 8, "var(--filet-porteur)", "var(--filet-fin)") + '</div>' +
-          '<div style="position:absolute;inset:13px">' + anneau(progValeur, 78, 8, "var(--encre)", "var(--filet-fin)") + '</div>' +
+          '<div style="position:absolute;inset:0">' +
+            anneau(progC, 104, 6, "var(--encre3)", "var(--piste)") + '</div>' +
+          '<div style="position:absolute;inset:14px">' +
+            anneau(progQ, 76, 6, "var(--encre)", "var(--piste)") + '</div>' +
           '<div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center">' +
-            '<div><b class="num" style="font-size:26px;font-weight:700;letter-spacing:-.04em;line-height:1;display:block;color:var(--verm-e)" ' +
-              'data-compteur="' + j.valeur + '" data-duree="800">0</b>' +
-              '<span style="font-size:9.5px;color:var(--f-texte-3);font-weight:500;display:block;margin-top:2px">' +
-              capturesJour + ' fiches</span></div>' +
+            '<div><b class="num" style="font-size:32px;line-height:1;display:block" ' +
+              'data-compteur="' + j.qualifies + '" data-duree="700">0</b>' +
+              '<span style="font:400 11px/1.2 var(--f-ui);color:var(--encre3c);display:block;margin-top:4px">' +
+              'qualifiés</span></div>' +
           '</div>' +
         '</div>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--f-texte-3)">Cible du jour</div>' +
-          '<p style="font-size:12.5px;color:var(--f-texte-2);margin-top:6px;line-height:1.5">' +
-            (progValeur >= 1
-              ? "Cible atteinte : <b style='color:var(--verm-e)'>" + nf.format(j.valeur) + "</b> points de valeur."
-              : "<b style='color:var(--f-texte)'>" + nf.format(j.valeur) + "</b> sur " + nf.format(j.cible) +
-                " points. " + (progValeur > prog
-                  ? "Votre qualité vous fait gagner de l’avance sur le volume."
-                  : "Qualifier La Pile vaut plus que capturer davantage.")) +
-          '</p>' +
-          '<div style="display:flex;gap:14px;margin-top:10px">' +
-            '<div><div style="font-size:10px;color:var(--f-texte-3)">Ce salon</div>' +
-              '<b class="num tz-jade" style="font-size:15px" data-compteur="' + salon + '" data-duree="900">0</b>' +
-              '<span style="font-size:10px;color:var(--f-texte-3)"> pts</span></div>' +
-            '<div><div style="font-size:10px;color:var(--f-texte-3)">Record</div>' +
-              '<b class="num" style="font-size:15px;color:var(--f-texte)">' + nf.format(rec) + '</b>' +
-              '<span style="font-size:10px;color:var(--f-texte-3)"> / jour</span></div>' +
-            '<div><div style="font-size:10px;color:var(--f-texte-3)">À qualifier</div>' +
-              '<b class="num" style="font-size:15px;color:' + (j.aQualifier ? 'var(--encre)' : 'var(--f-texte)') + '">' + j.aQualifier + '</b>' +
-              '<span style="font-size:10px;color:var(--f-texte-3)"> fiches</span></div>' +
-          '</div>' +
+          '<div class="eyebrow">Aujourd’hui</div>' +
+          '<p style="font-size:15px;color:var(--encre);margin-top:8px;line-height:1.4">' +
+            '<b class="num">' + j.qualifies + '</b> lead' + (j.qualifies>1?'s':'') + ' qualifié' +
+            (j.qualifies>1?'s':'') + ' sur <b class="num">' + contacts + '</b> contact' +
+            (contacts>1?'s':'') + ' enregistré' + (contacts>1?'s':'') + '.</p>' +
+          '<p style="font-size:13px;color:var(--encre2);margin-top:8px;line-height:1.45">' +
+            (j.qualifies >= j.attendus
+              ? 'Objectif du jour atteint. Chaque fiche qualifiée en plus est une affaire de plus à traiter lundi.'
+              : 'Une capture non qualifiée ne compte pas dans ce chiffre.') + '</p>' +
         '</div>' +
       '</div>' +
+      '<div style="display:flex;gap:24px;margin-top:20px;padding-top:16px;border-top:1px solid var(--joint)">' +
+        chiffreSecondaire("Prêtes pour le CRM", j.pretsCRM + " sur " + contacts) +
+        chiffreSecondaire("Leads chauds", String(j.chauds)) +
+        chiffreSecondaire("Meilleure journée", record + " contacts") +
+      '</div>' +
+      (j.delaiMedian
+        ? '<p style="font:400 11px/1.4 var(--f-mono);color:var(--encre3c);margin-top:12px">' +
+          'Délai de qualification · médiane ' + j.delaiMedian + ' min' +
+          (j.delaiMedian > 120 ? ' — la conversation s’efface, qualifiez sur le stand' : '') + '</p>'
+        : "") +
     '</div>' +
 
-    /* ---- La Pile : la seule alerte de l'écran ---- */
+    /* ---- la seule alerte de l'écran ---- */
     (S.pile.length
-      ? '<button type="button" class="prow bc-appui" data-ptab="pile" style="margin-top:10px;background:var(--plaque);border-color:var(--encre)">' +
-        '<span style="color:var(--encre);flex:none">' + ic("layers",20) + '</span>' +
-        '<span style="flex:1;min-width:0"><span class="pn" style="color:var(--encre)">' + S.pile.length +
-          ' capture' + (S.pile.length>1?"s":"") + ' à qualifier</span>' +
-        '<span class="pc" style="color:var(--encre-2)">Valeur non révélée · entre ' + (S.pile.length * 15) +
-          ' et ' + (S.pile.length * 180) + ' points</span></span>' +
-        '<span style="color:var(--encre-3);flex:none">' + ic("right",16) + '</span></button>'
+      ? '<button type="button" class="prow bc-appui gouttiere gouttiere--agir" data-ptab="pile" ' +
+        'style="margin-top:16px;background:var(--creux)">' +
+        '<span class="gouttiere__marque num">' + S.pile.length + '</span>' +
+        '<span style="flex:1;min-width:0">' +
+          '<span class="pn">' + S.pile.length + ' prise' + (S.pile.length>1?'s':'') + ' à qualifier</span>' +
+          '<span class="pc">' + (j.plusAncienne >= 60
+            ? 'la plus ancienne depuis ' + Math.floor(j.plusAncienne / 60) + ' h'
+            : 'la plus ancienne depuis ' + j.plusAncienne + ' min') + '</span></span>' +
+        '<span style="color:var(--encre3);flex:none">' + ic("right",16) + '</span></button>'
       : "") +
 
-    /* ---- défis du jour ---- */
-    '<div style="margin-top:16px">' +
-      '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px">' +
-        '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--f-texte-3)">Défis du jour</span>' +
-        '<span style="font-size:11px;color:var(--f-texte-3)">' +
-          defis.filter(function(d){ return d.fait >= d.sur; }).length + ' / ' + defis.length + '</span>' +
+    /* ---- le travail non fini, ventilé par cause ---- */
+    '<div style="margin-top:24px">' +
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px">' +
+        '<span class="eyebrow">À boucler avant la fermeture</span>' +
+        '<span class="estampille">' + restant + '</span>' +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:8px">' +
-        defis.map(function(d){
-          const fini = d.fait >= d.sur;
-          return '<div class="defi' + (fini ? " fait" : "") + '">' +
-            '<span class="dcase">' + ic("check",13) + '</span>' +
-            '<span style="flex:1;min-width:0">' +
-              '<span class="dn">' + esc(d.nom) + '</span>' +
-              '<span class="da">' + esc(d.aide) + '</span>' +
-              '<span class="jauge" style="margin-top:7px;height:5px;display:block">' +
-                '<i style="width:' + (d.fait / d.sur * 100) + '%"></i></span>' +
-            '</span>' +
-            '<span style="flex:none;text-align:right">' +
-              '<span class="gain" style="font-size:13px">' + d.fait + '/' + d.sur + '</span></span>' +
-          '</div>';
-        }).join("") +
-      '</div>' +
+      taches.map(function(t){
+        const fini = t.n === 0;
+        return '<button type="button" class="prow bc-appui" data-ptab="' + esc(t.aller) + '" ' +
+          'style="background:none;border-bottom:1px solid var(--joint);padding:12px 0;min-height:0">' +
+          '<span style="flex:1;min-width:0;text-align:left">' +
+            '<span class="pn" style="color:' + (fini ? "var(--encre3)" : "var(--encre)") + '">' +
+              esc(t.nom) + '</span>' +
+            '<span class="pc">' + esc(t.aide) + '</span></span>' +
+          '<span class="num" style="font-size:20px;flex:none;color:' +
+            (fini ? "var(--encre3)" : "var(--encre)") + '">' + t.n + '</span></button>';
+      }).join("") +
     '</div>' +
 
-    /* ---- action principale, en bas, à portée du pouce ---- */
-    '<button type="button" class="bigbtn bc-appui" data-ptab="capture" style="margin-top:16px">' +
-      ic("scan",22) + 'Capturer un contact</button>' +
+    '<button type="button" class="bigbtn bc-appui" data-ptab="capture" style="margin-top:20px">' +
+      ic("scan",20) + 'Enregistrer un contact</button>' +
 
-    '<p style="font-size:10.5px;color:var(--f-texte-3);margin-top:12px;text-align:center;line-height:1.5">' +
-      esc(moi.role) + ' · ' + esc(SEED.salon.nom) + ' · ' + esc(SEED.salon.stand) + '</p>' +
+    '<p style="font:400 11px/1.4 var(--f-mono);color:var(--encre3c);margin-top:16px;text-align:center">' +
+      esc(moi.role) + ' · ' + esc(SEED.salon.nom) + '</p>' +
   '</div>';
+}
+
+function chiffreSecondaire(lbl, val){
+  return '<div><div style="font:600 11px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;' +
+    'color:var(--encre3c)">' + esc(lbl) + '</div>' +
+    '<div class="num" style="font-size:17px;margin-top:6px">' + esc(val) + '</div></div>';
 }
 
 /* ============================================================
@@ -7156,7 +7141,7 @@ const PASTILLES = { "Chaud":"●●●", "Tiède":"●●○", "Froid":"●○�
 function pDevoilement(){
   const l = byId(S.leads, S.devoile);
   if (!l) return "";
-  const v = valeurLead(l);
+  const due = reponseDue(l);
   const manque = pointManquant(l);
   const seuilProche = SEUILS_BANDE.filter(function(x){ return Math.abs(l.score - x) <= 3; })[0];
 
@@ -7194,10 +7179,12 @@ function pDevoilement(){
           PASTILLES[l.statut] + '</div>' +
       '</div>' +
 
-      '<div id="dev-ligne" style="margin-top:18px;opacity:0">' +
-        '<div class="gain" style="font-size:22px;justify-content:center">+' + v.V + ' pts</div>' +
-        '<p style="font-size:11.5px;color:var(--f-texte-3);margin-top:6px;line-height:1.55;max-width:30ch;margin-inline:auto">' +
-          esc(ligneValeur(v)) + '</p>' +
+      /* Ce qui remplace la ligne de valeur : la conséquence, datée.
+         Un professionnel n'a pas besoin d'un gain, il a besoin d'une échéance. */
+      '<div id="dev-ligne" style="margin-top:20px;opacity:0">' +
+        '<p style="font-size:17px;font-weight:600;color:var(--encre);line-height:1.35;max-width:28ch;margin-inline:auto">' +
+          esc(due.action) + '<br>' +
+          '<span style="font-weight:400;color:var(--encre2)">dû le ' + esc(due.texte) + '</span></p>' +
       '</div>' +
     '</div>' +
 
@@ -7435,16 +7422,16 @@ function funnelChart(titre, hint, etapes){
  *  etape, ce qui le rend faux et decredibilise tout le tableau de bord. */
 function etapesEntonnoir(L){
   const e1 = L;
-  // L e-mail est le vrai goulot d etranglement du suivi post-salon :
-  // sans lui, pas de sequence automatique, pas de relance a l echelle.
-  const e2 = e1.filter(function(l){ return !!l.email; });
-  const e3 = e2.filter(function(l){ return completude(l) === 1; });
-  const e4 = e3.filter(function(l){ return l.crm; });
+  const e2 = e1.filter(emailExploitable);
+  const e3 = e2.filter(qualifie);
+  const e4 = e3.filter(pretCRM);
+  const e5 = e4.filter(function(l){ return l.crm; });
   return [
-    { label:"Contacts capturés", value:e1.length },
-    { label:"E-mail exploitable", value:e2.length },
-    { label:"Fiche complète (5 champs sur 5)", value:e3.length },
-    { label:"Complets et synchronisés au CRM", value:e4.length }
+    { label:"Contacts enregistrés", value:e1.length },
+    { label:"Canal de contact valide", value:e2.length },
+    { label:"Leads qualifiés", value:e3.length },
+    { label:"Fiches prêtes pour le CRM", value:e4.length },
+    { label:"Transmises au CRM", value:e5.length }
   ];
 }
 
@@ -7474,7 +7461,6 @@ function voletPouls(){
           '<span class="avatar" style="background:' + avatarColor(e.c.id) + ';width:26px;height:26px;font-size:10px">' +
             esc(e.c.init) + '</span>' +
           '<span class="pq"><b>' + esc(e.c.nom.split(" ")[0]) + '</b> ' + esc(e.quoi) + '</span>' +
-          '<span class="gain" style="flex:none">+' + e.pts + '</span>' +
           '<span class="pt">' + esc(e.quand) + '</span>' +
         '</button>';
       }).join("") +
@@ -7484,61 +7470,30 @@ function voletPouls(){
     '</div></section>';
 }
 
-/** Podium : trois places, celebrees. Le reste de l'equipe n'est pas
- *  affiche comme un classement — personne n'a besoin de savoir
- *  publiquement qu'il est dernier. */
-function voletPodium(){
-  const p3 = podium().slice(0, 3);
-  const ordre = [p3[1], p3[0], p3[2]].filter(Boolean);   // 2e, 1er, 3e
-  const rangs = { 0:"2ᵉ", 1:"1ᵉʳ", 2:"3ᵉ" };
+/** La contribution de l'équipe.
+ *  Tri ALPHABÉTIQUE, jamais par performance. Un classement public
+ *  démotive les trois quarts d'une équipe et pousse au volume creux.
+ *  La médiane sert de repère, sans désigner personne. */
+function voletContribution(){
+  const e = contributionEquipe();
+  const max = Math.max.apply(null, e.lignes.map(function(x){ return x.contacts; }).concat([1]));
   return '<section class="chart">' +
-    '<h3>Podium du salon</h3>' +
-    '<p class="hint">Points de valeur ramenée, pas volume de cartes scannées.</p>' +
-    '<div class="body"><div class="podium">' +
-      ordre.map(function(x, i){
-        const premier = x === p3[0];
-        return '<div class="pod' + (premier ? " p1" : "") + '" style="' + (premier ? "padding-block:20px" : "") + '">' +
-          '<div class="rang">' + (premier ? "1ᵉʳ" : rangs[i]) + '</div>' +
-          '<div class="avatar" style="background:' + avatarColor(x.c.id) + ';margin:9px auto 0;width:' +
-            (premier ? 38 : 32) + 'px;height:' + (premier ? 38 : 32) + 'px;font-size:' + (premier ? 13 : 11) + 'px">' +
-            esc(x.c.init) + '</div>' +
-          '<div class="pnom">' + esc(x.c.nom.split(" ")[0]) + '</div>' +
-          '<div class="ppts num" data-compteur="' + x.pts + '" data-duree="800">0</div>' +
-          '<div style="font-size:11px;color:var(--ink-3);margin-top:2px">' + esc(x.niveau.nom) + '</div>' +
-        '</div>';
+    '<h3>Contribution de l’équipe</h3>' +
+    '<p class="hint">Leads qualifiés sur contacts enregistrés. Ordre alphabétique : ce tableau ' +
+      'sert à répartir la charge, pas à classer des personnes.</p>' +
+    '<div class="body"><div class="bars">' +
+      e.lignes.map(function(x){
+        return '<div class="barrow" style="grid-template-columns:150px 1fr 96px">' +
+          '<span class="lb">' + esc(x.c.nom) + '</span>' +
+          '<span class="bartrack" style="position:relative">' +
+            '<i class="barfill" style="width:' + (x.contacts/max*100).toFixed(0) + '%;background:var(--piste)!important"></i>' +
+            '<i class="barfill" style="position:absolute;top:0;left:0;width:' + (x.qualifies/max*100).toFixed(0) + '%"></i>' +
+          '</span>' +
+          '<span class="vv num">' + x.qualifies + ' / ' + x.contacts + '</span></div>';
       }).join("") +
     '</div>' +
-    '<p class="hint" style="margin-top:12px">' +
-      esc(p3[0].c.nom.split(" ")[0]) + ' mène avec ' + nf.format(p3[0].pts) + ' points, ' +
-      (p3[1] ? 'soit ' + nf.format(p3[0].pts - p3[1].pts) + ' d’avance sur ' + esc(p3[1].c.nom.split(" ")[0]) + '.' : '') +
-    '</p></div></section>';
-}
-
-
-/** Progression individuelle : chacun se compare a son propre niveau
- *  suivant, pas au collegue du dessus. */
-function voletNiveaux(){
-  return '<section class="chart">' +
-    '<h3>Progression individuelle</h3>' +
-    '<p class="hint">Chacun avance vers son niveau suivant. C’est la seule comparaison qui motive durablement.</p>' +
-    '<div class="body" style="display:flex;flex-direction:column;gap:13px">' +
-      podium().map(function(x){
-        return '<div>' +
-          '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px">' +
-            '<span class="avatar" style="background:' + avatarColor(x.c.id) + ';width:24px;height:24px;font-size:10px">' +
-              esc(x.c.init) + '</span>' +
-            '<span style="flex:1;font-size:13px;font-weight:600">' + esc(x.c.nom) + '</span>' +
-            '<span style="font-size:12px;color:var(--ink-3)">' + esc(x.niveau.nom) + '</span>' +
-            '<b class="num" style="font-size:13px;min-width:52px;text-align:right">' + nf.format(x.pts) + '</b>' +
-          '</div>' +
-          '<span class="jauge" style="display:block;background:var(--bg-3)">' +
-            '<i style="width:' + (x.niveau.progression*100).toFixed(1) + '%;background:var(--jade-texte)"></i></span>' +
-          '<div style="font-size:11px;color:var(--ink-4);margin-top:4px">' +
-            (x.niveau.suivant
-              ? nf.format(x.niveau.restant) + ' points avant « ' + esc(x.niveau.suivant) + ' »'
-              : 'Niveau maximal') + '</div>' +
-        '</div>';
-      }).join("") +
+    '<p class="hint" style="margin-top:12px">Médiane de l’équipe : <b>' + e.medianeQualifies +
+      '</b> leads qualifiés. Barre pleine : qualifiés. Barre claire : contacts enregistrés.</p>' +
     '</div></section>';
 }
 
@@ -7547,9 +7502,14 @@ function voletNiveaux(){
    ============================================================ */
 function vueDashboard(){
   const L = S.leads;
-  const chauds = L.filter(function(l){ return l.statut === "Chaud"; });
+  const Q = L.filter(qualifie);
+  const prets = L.filter(pretCRM);
+  const nonTransmis = L.filter(function(l){ return qualifie(l) && !l.crm; });
+  const chauds = L.filter(function(l){ return (l.score || 0) >= 75; });
   const complets = L.filter(function(l){ return completude(l) === 1; });
   const dansCRM = L.filter(function(l){ return l.crm; });
+  const delaiMed = mediane(L.map(function(l){ return l.qualifieEn; }));
+  const delaiP90 = percentile(L.map(function(l){ return l.qualifieEn; }), 0.9);
   const parJour = ["2026-06-15","2026-06-16","2026-06-17","2026-06-18","2026-06-19"].map(function(d){
     return { label:dayLabel(d).replace(" juin",""), value:L.filter(function(l){ return l.date === d; }).length };
   });
@@ -7560,19 +7520,19 @@ function vueDashboard(){
       '<p class="eyebrow">Pilotage · ' + esc(SEED.salon.nom) + '</p>' +
       '<h1>Tableau de bord</h1>' +
       '<p>Ce que l’équipe a réellement ramené du salon, mis à jour à chaque capture. ' +
-         'Les indicateurs marqués d’une flèche ouvrent la liste des leads déjà filtrée.</p>' +
+         'Un lead qualifié : e-mail exploitable, quatre critères renseignés, score ≥ 60, consentement recueilli.</p>' +
     '</div>' +
 
     '<div class="kpigrid">' +
-      kpi("Leads capturés", L.length, "sur les 5 jours de salon", {}) +
-      kpi("Leads chauds", chauds.length, pct(chauds.length, L.length) + " % du total", { statut:"Chaud" }) +
-      kpi("Fiches complètes", pct(complets.length, L.length) + " %", complets.length + " fiches sur " + L.length, { complet:"oui" }) +
-      kpi("Score moyen", scoreMoyen, "sur 100 points, modèle paramétrable", null) +
-      kpi("Restent à envoyer", L.length - dansCRM.length, pct(dansCRM.length, L.length) + " % déjà dans le CRM", { crm:"non" }) +
+      kpi("Contacts enregistrés", L.length, "sur les 5 jours de salon", {}) +
+      kpi("Leads qualifiés", Q.length, "définition v1 — " + pct(Q.length, L.length) + " % des contacts", { qualifie:"oui" }) +
+      kpi("Prêtes pour le CRM", prets.length, pct(prets.length, L.length) + " % — cible 80 %", { pret:"oui" }) +
+      kpi("Non transmises au CRM", nonTransmis.length, "objectif : 0", { qualifie:"oui", crm:"non" }) +
+      kpi("Délai médian de qualification", delaiMed + " min", "p90 " + delaiP90 + " min", null) +
     '</div>' +
 
     '<div class="chartgrid g-2" style="margin-top:14px">' +
-      voletPouls() + voletPodium() +
+      voletPouls() + voletContribution() +
     '</div>' +
 
     '<div class="chartgrid">' +
@@ -7582,7 +7542,7 @@ function vueDashboard(){
         etapesEntonnoir(L)) +
       barChart("Pays", "Top 8. Utile pour arbitrer les prochains salons.", grouper(L, "pays").slice(0,8)) +
       barChart("Profil société", "Qui vient réellement sur le stand.", grouper(L, "profil")) +
-      barChart("Niveau de demande", "Le critère le plus lourd du scoring : 30 points sur 100.", grouper(L, "niveau"), "var(--warm)") +
+      barChart("Niveau de demande", "Le critère le plus lourd du barème : 30 sur 100.", grouper(L, "niveau"), "var(--warm)") +
       barChart("Produit d’intérêt", "Ce que le marché est venu chercher.", grouper(L, "produit")) +
       barChart("Action de suivi attendue", "La charge de travail post-salon, par nature d’action.", grouper(L, "suivi"), "var(--ok)") +
       barChart("Machine concernée", "Signal pour le bureau d’études.", grouper(L, "machine")) +
@@ -7733,70 +7693,69 @@ function barreSelection(){
    Vue : équipe
    ============================================================ */
 function vueEquipe(){
-  const stats = SEED.commerciaux.map(function(c){
-    const mien = S.leads.filter(function(l){ return l.commercial === c.id; });
-    const complets = mien.filter(function(l){ return completude(l) === 1; });
-    const chauds = mien.filter(function(l){ return l.statut === "Chaud"; });
-    const crm = mien.filter(function(l){ return l.crm; });
-    return {
-      c: c, n: mien.length,
-      qualite: pct(complets.length, mien.length),
-      chauds: chauds.length,
-      score: Math.round(mien.reduce(function(s,l){ return s + l.score; }, 0) / (mien.length || 1)),
-      crm: pct(crm.length, mien.length),
-      // Deduit des donnees : plus la part de fiches incompletes est forte,
-      // plus la relance tarde. Pas de valeur ecrite en dur.
-      delai: Math.round((0.8 + (1 - complets.length / (mien.length || 1)) * 4.2) * 10) / 10
-    };
-  }).sort(function(a,b){ return b.n - a.n; });
-
-  const maxN = Math.max.apply(null, stats.map(function(s){ return s.n; }));
+  const e = contributionEquipe();
+  const total = S.leads.length;
+  const totalQ = S.leads.filter(qualifie).length;
 
   return '<div class="page">' +
-    '<div class="pagehead"><p class="eyebrow">Performance commerciale</p><h1>Équipe</h1>' +
-      '<p>Volume, qualité et suivi par commercial sur ' + esc(SEED.salon.nom) + '. ' +
-      'Ces indicateurs servent à répartir la charge et à accompagner, pas à classer.</p></div>' +
+    '<div class="pagehead"><p class="eyebrow">Pilotage</p><h1>Équipe</h1>' +
+      '<p>Contacts enregistrés et leads qualifiés par commercial sur ' + esc(SEED.salon.nom) + '. ' +
+      'Ces chiffres servent à répartir la charge et à accompagner, pas à classer des personnes : ' +
+      'l’ordre est alphabétique et la médiane sert de repère.</p></div>' +
 
-    '<div class="chartgrid g-2" style="margin:0 0 16px">' + voletPodium() + voletNiveaux() + '</div>' +
+    '<div class="kpigrid">' +
+      kpi("Contacts enregistrés", total, "toute l’équipe", {}) +
+      kpi("Leads qualifiés", totalQ, pct(totalQ, total) + " % des contacts", { qualifie:"oui" }) +
+      kpi("Médiane par commercial", e.medianeQualifies, "leads qualifiés", null) +
+      kpi("Commerciaux sur le stand", e.lignes.length, "sur 5 jours", null) +
+    '</div>' +
 
-    '<div class="card" style="padding:16px 18px;margin-bottom:16px;display:flex;gap:11px;align-items:flex-start">' +
-      '<span style="color:var(--verm-e);flex:none;margin-top:1px">' + ic("alert",17) + '</span>' +
-      '<p style="font-size:13px;color:var(--ink-2);line-height:1.6;max-width:80ch">' +
-        '<b style="color:var(--ink)">Parti pris produit.</b> Le volume brut de cartes ramassées est le plus mauvais ' +
-        'indicateur de performance en salon : il récompense celui qui scanne tout le monde sans qualifier. ' +
-        'La colonne qui compte est la qualité de fiche, et le délai de première relance.</p></div>' +
-
-    '<div class="tablewrap"><div class="tscroll"><table>' +
-      '<thead><tr><th scope="col">Commercial</th><th scope="col">Leads</th><th scope="col">Volume</th><th scope="col">Fiches complètes</th>' +
-        '<th scope="col">Score moyen</th><th scope="col">Leads chauds</th><th scope="col">Délai 1<sup>re</sup> relance</th><th scope="col">Poussés au CRM</th></tr></thead><tbody>' +
-      stats.map(function(s){
+    '<div class="cote"><span class="cote__val">01&nbsp;&nbsp;Par commercial</span></div>' +
+    '<div class="tablewrap"><div class="tscroll"><table style="min-width:900px">' +
+      '<thead><tr><th scope="col">Commercial</th><th scope="col">Contacts enregistrés</th>' +
+      '<th scope="col">Leads qualifiés</th><th scope="col">Taux</th>' +
+      '<th scope="col">Prêtes pour le CRM</th><th scope="col">Leads chauds</th>' +
+      '<th scope="col">Délai médian de qualification</th><th scope="col">Au carnet</th></tr></thead><tbody>' +
+      e.lignes.map(function(x){
+        const ecart = x.qualifies - e.medianeQualifies;
         return '<tr>' +
-          '<td><span style="display:flex;align-items:center;gap:9px"><span class="avatar" style="background:' + avatarColor(s.c.id) + '">' +
-            esc(s.c.init) + '</span><span><span class="cellname">' + esc(s.c.nom) + '</span>' +
-            '<div class="cellsub">' + esc(s.c.role) + '</div></span></span></td>' +
-          '<td><b class="num">' + s.n + '</b></td>' +
-          '<td style="min-width:110px"><span class="bartrack" style="display:block"><i class="barfill" style="width:' +
-            (s.n/maxN*100) + '%"></i></span></td>' +
-          '<td><span class="scorebadge"><b class="num">' + s.qualite + ' %</b>' +
-            (s.qualite >= 80 ? '<span class="tag t-ok">solide</span>'
-             : s.qualite >= 60 ? '<span class="tag t-warm">à surveiller</span>'
-             : '<span class="tag t-hot">à accompagner</span>') + '</span></td>' +
-          '<td class="num">' + s.score + '</td>' +
-          '<td class="num">' + s.chauds + '</td>' +
-          '<td><span class="num">' + String(s.delai).replace(".", ",") + ' j</span>' +
-            (s.delai > 3 ? ' <span class="tag t-hot">hors délai</span>' : "") + '</td>' +
-          '<td class="num">' + s.crm + ' %</td>' +
+          '<td><span style="display:flex;align-items:center;gap:10px">' +
+            '<span class="avatar">' + esc(x.c.init) + '</span>' +
+            '<span><span class="cellname">' + esc(x.c.nom) + '</span>' +
+            '<div class="cellsub">' + esc(x.c.role) + '</div></span></span></td>' +
+          '<td class="num">' + x.contacts + '</td>' +
+          '<td><span class="scorebadge"><b class="num">' + x.qualifies + '</b>' +
+            (x.contacts >= 15
+              ? '<span class="tag t-neutral">' + (ecart >= 0 ? "+" : "") + ecart + ' vs médiane</span>'
+              : '<span class="tag t-neutral">effectif trop faible</span>') + '</span></td>' +
+          '<td class="num">' + (x.contacts >= 20 ? x.taux + " %" : x.qualifies + " sur " + x.contacts) + '</td>' +
+          '<td class="num">' + x.pretsCRM + '</td>' +
+          '<td class="num">' + x.chauds + '</td>' +
+          '<td class="num">' + (x.delai ? x.delai + " min" : "—") + '</td>' +
+          '<td class="num">' + x.carnet.contacts + ' · ' + x.carnet.opportunites + ' opp.</td>' +
         '</tr>';
       }).join("") +
       '</tbody></table></div>' +
-      '<div class="tfoot"><span>Objectif interne : première relance sous 3 jours ouvrés, fiche complète à 80 % minimum.</span></div>' +
+      '<div class="tfoot"><span>Sous 20 contacts, le taux est affiché en effectif brut : ' +
+        'un pourcentage calculé sur 7 fiches ne veut rien dire.</span></div>' +
     '</div>' +
 
-    '<div class="chartgrid">' +
-      barChart("Leads par commercial", "Volume brut, à lire avec la colonne qualité.",
-        stats.map(function(s){ return { label:s.c.nom, value:s.n }; })) +
-      barChart("Leads chauds par commercial", "Le vrai indicateur de valeur ramenée.",
-        stats.map(function(s){ return { label:s.c.nom, value:s.chauds }; }), "var(--hot)") +
+    '<div class="cote"><span class="cote__val">02&nbsp;&nbsp;Lecture</span></div>' +
+    '<div class="chartgrid g-2">' +
+      voletContribution() +
+      '<section class="chart">' +
+        '<h3>Ce que ce tableau ne dit pas</h3>' +
+        '<div class="body" style="display:flex;flex-direction:column;gap:16px">' +
+          regle("1", "Le volume de contacts n’est pas une performance",
+            "Ramasser cent cartes sans les qualifier remplit la base et vide le pipeline. " +
+            "La colonne qui compte est celle des leads qualifiés.") +
+          regle("2", "Le délai de relance n’est pas affiché ici",
+            "Il exige la date de première prise de contact, qui n’est pas encore collectée. " +
+            "Afficher une approximation serait pire que de ne rien afficher.") +
+          regle("3", "La comparaison n’a de sens qu’à effectif comparable",
+            "Un commercial arrivé le troisième jour n’est pas comparable à un autre présent " +
+            "depuis l’ouverture. Le seuil est fixé à 15 contacts.") +
+        '</div></section>' +
     '</div>' +
   '</div>';
 }
@@ -7992,17 +7951,16 @@ function contactsDuSalon(id){
     return S.leads.map(function(l){
       return {
         statut:l.statut, crm:l.crm, source:l.source || "Photo de carte",
-        qualifie: completude(l) === 1,
-        valeur: valeurLead(l).V,
+        email:l.email, tel:l.tel,
+        qualifieV1: qualifie(l),
         opportunite:false, montant:0, potentiel:l.potentiel || 0
       };
     });
   }
   return (SEED.historique || []).filter(function(h){ return h.salonId === id; }).map(function(h){
     return {
-      statut:h.statut, crm:h.crm, source:h.source,
-      qualifie: !!(h.email && h.tel),
-      valeur:0,
+      statut:h.statut, crm:h.crm, source:h.source, email:h.email, tel:h.tel,
+      qualifieV1: null,          /* non mesurable : l historique ne porte ni critères ni score */
       opportunite:!!h.opportunite, montant:h.montant || 0, potentiel:0
     };
   });
@@ -8012,7 +7970,13 @@ function contactsDuSalon(id){
 function bilanSalon(id){
   const b = (SEED.budgets || {})[id];
   const c = contactsDuSalon(id);
-  const qualifies = c.filter(function(x){ return x.qualifie; }).length;
+  /* Une seule definition par colonne. Les editions closes ne portent ni
+     les quatre criteres ni le score : la seule condition verifiable
+     partout est l e-mail exploitable. On compare donc TOUT en v0, et on
+     l etiquette a l ecran. Melanger deux definitions dans un meme tableau
+     produit un cout par lead qualifie qui ne veut rien dire. */
+  const qualifies = c.filter(qualifieV0).length;
+  const qualifiesV1 = c.filter(function(x){ return x.qualifieV1 === true; }).length;
   const chauds = c.filter(function(x){ return x.statut === "Chaud"; }).length;
   const opp = c.filter(function(x){ return x.opportunite; }).length;
   const pipeline = c.reduce(function(s,x){ return s + x.montant; }, 0);
@@ -8022,7 +7986,7 @@ function bilanSalon(id){
     id:id, nom:b ? b.nom : id, ville:b ? b.ville : "", du:b ? b.du : "",
     jours:b ? b.jours : 0, commerciaux:b ? b.commerciaux : 0,
     cout:cout, budget:b,
-    contacts:c.length, qualifies:qualifies, chauds:chauds,
+    contacts:c.length, qualifies:qualifies, qualifiesV1:qualifiesV1, chauds:chauds,
     opportunites:opp, pipeline:pipeline, potentiel:potentiel,
     encours:(id === "wire26"),
     // Le chiffre central. Il n'a de sens que rapporté aux fiches
@@ -8030,6 +7994,7 @@ function bilanSalon(id){
     cplq: qualifies ? Math.round(cout / qualifies) : 0,
     coutParContact: c.length ? Math.round(cout / c.length) : 0,
     tauxQualif: pct(qualifies, c.length),
+    v1Disponible: (id === "wire26"),
     tauxOpp: pct(opp, qualifies || 1),
     retour: cout ? Math.round((pipeline || potentiel) / cout * 100) / 100 : 0
   };
@@ -8094,8 +8059,10 @@ function vueSalons(){
         '</tr>';
       }).join("") +
       '</tbody></table></div>' +
-      '<div class="tfoot"><span>Le salon en cours affiche un potentiel, jamais un pipeline signé : ' +
-        'une opportunité met en moyenne 4 à 9 mois à mûrir.</span></div>' +
+      '<div class="tfoot"><span>Comparaison en définition v0 — e-mail exploitable — la seule ' +
+        'vérifiable sur les éditions closes, qui ne portent ni les quatre critères ni le score. ' +
+        'Elle majore le compte et elle est étiquetée comme telle. Le salon en cours affiche un ' +
+        'potentiel déclaré, jamais un pipeline signé : une opportunité met 4 à 9 mois à mûrir.</span></div>' +
     '</div>' +
 
     '<div class="cote"><span class="cote__val">02&nbsp;&nbsp;Lecture</span></div>' +
@@ -8756,13 +8723,13 @@ function vueScoring(){
 
     '<div class="chartgrid g-2">' +
       '<section class="chart"><h3>Poids des critères</h3>' +
-        '<p class="hint">Total ' + total + ' points. ' +
+        '<p class="hint">Total ' + total + ' sur 100. ' +
           (total !== 100 ? '<b style="color:var(--warm)">Le total doit faire 100.</b>' : "Le total fait bien 100.") + '</p>' +
         '<div class="body" style="display:flex;flex-direction:column;gap:16px">' +
           S.scoring.criteres.map(function(c, i){
             return '<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">' +
               '<label for="w' + i + '" style="font-weight:500">' + esc(c.libelle) + '</label>' +
-              '<b class="num">' + c.poids + ' pts</b></div>' +
+              '<b class="num">' + c.poids + ' / 100</b></div>' +
               '<input id="w' + i + '" type="range" min="0" max="50" step="5" value="' + c.poids + '" ' +
                 'data-weight="' + i + '" style="width:100%;accent-color:var(--verm-e)"></div>';
           }).join("") +
@@ -9282,7 +9249,13 @@ document.addEventListener("click", function(ev){
       origine:p.origine || "Passage sur stand", profil:p.profil || "Fabricant",
       machine:p.machine || "", produit:p.produit || "", niveau:p.niveau || "Veille technologique",
       suivi:p.suivi || "Envoi documentation", score:det.total, statut:statutDe(det.total),
-      commercial:S.me, date:"2026-06-17", note:p.note || "", crm:false, consentement:true
+      commercial:S.me, date:"2026-06-17", note:p.note || "", crm:false, consentement:true,
+      // La fiche vient d etre qualifiee a l instant : le delai est celui du
+      // triage, et le potentiel decoule du niveau de demande declare.
+      qualifieEn:1, serie:0, verso:false,
+      potentiel:({"Projet budgété":62000,"Appel d'offres en cours":48000,"Projet à l'étude":25000,
+                  "Renouvellement parc":18000,"Veille technologique":6000})[p.niveau] || 6000,
+      source:"Photo de carte", salon:SEED.salon.nom, salonId:"wire26"
     });
     S.pile = S.pile.filter(function(x){ return x.id !== S.pscreen; });
     const cree = S.leads[0];
@@ -9553,6 +9526,3 @@ charger();
 render();
 
 </script>
-
-</body>
-</html>
