@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="BinchamCard — capture de cartes de visite en salon, carnet centralise, scoring explicable et export CRM.">
+<meta name="description" content="BinchamCard — capture de cartes de visite en salon, carnet centralise, mode kiosque, scoring explicable et export CRM.">
 <meta name="theme-color" content="#0B0F19">
 <meta property="og:title" content="BinchamCard">
 <meta property="og:description" content="La carte de visite ramassee sur le stand arrive dans votre CRM, qualifiee.">
@@ -743,6 +743,50 @@ tbody tr.sel{background:var(--accent-bg)}
   background:rgba(255,255,255,.035);text-align:center
 }
 .captured .ok{background:rgba(0,214,154,.16)!important;border:1px solid rgba(0,214,154,.4);color:var(--jade-vif)}
+
+/* ------------------------------------------------------------
+   Mode kiosque : la tablette du comptoir
+   ------------------------------------------------------------ */
+.tablette{
+  width:min(460px,100%);aspect-ratio:3/4;border-radius:26px;background:#0B0F19;padding:13px;
+  box-shadow:var(--e3),0 0 0 1px rgba(11,15,25,.12);margin:0 auto
+}
+.tablettescreen{
+  width:100%;height:100%;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;
+  background:var(--f-fond);color:var(--f-texte);
+  /* Meme principe que le telephone : la zone redefinit ses tokens,
+     les composants n ont pas besoin de savoir ou ils vivent. */
+  --bg:#0E141D; --bg-2:#111925; --bg-3:#17212E;
+  --line:#212D3C; --line-2:#33415A;
+  --ink:#F2F6FB; --ink-2:#C2CDDC; --ink-3:#9DAABC; --ink-4:#8B99AD;
+  --accent:#00D69A; --accent-solid:#00D69A; --on-accent:#04150F
+}
+.kbandeau{
+  flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:15px 20px;border-bottom:1px solid var(--f-bord);color:var(--f-texte)
+}
+.kcorps{flex:1;overflow-y:auto;padding:22px 24px}
+.ketape{min-height:100%;display:flex;flex-direction:column}
+.kpied{flex:none;display:flex;align-items:center;justify-content:center;gap:7px;padding:12px}
+.kpoint{width:7px;height:7px;border-radius:50%;background:var(--f-bord)}
+.kpoint.on{background:var(--jade-vif);width:22px;border-radius:20px}
+.kfield{display:block}
+.kfield > span{display:block;font-size:11.5px;font-weight:600;color:var(--f-texte-3);margin-bottom:6px}
+.kfield input{
+  width:100%;padding:13px 14px;border:1px solid var(--f-bord);border-radius:11px;
+  background:var(--f-surface);color:var(--f-texte);font-size:16px;
+  transition:border-color .18s var(--sortie),box-shadow .18s var(--sortie)
+}
+.kfield input::placeholder{color:#5D6B80}
+.kfield input:focus{outline:none;border-color:var(--jade-vif);box-shadow:0 0 0 3px rgba(0,214,154,.18)}
+.kconsent{
+  display:flex;gap:11px;align-items:flex-start;margin-top:16px;font-size:12.5px;
+  color:var(--f-texte-2);line-height:1.5;cursor:pointer
+}
+.kconsent input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--jade-vif)}
+.tablettescreen .bigbtn:disabled{background:var(--f-haute);color:var(--f-texte-3);cursor:not-allowed}
+@media (max-width:520px){ .tablette{border-radius:20px;padding:9px} .kcorps{padding:18px 16px} }
+
 </style>
 
 <div class="app">
@@ -5387,7 +5431,7 @@ const SCORING = {
         "Envoi documentation":.4, "Rappel dans 3 mois":.2 } },
     { cle:"origine", libelle:"Origine du contact", poids:15, valeurs:{
         "Rendez-vous planifié":1, "Recommandation partenaire":.87, "Contact agent local":.67,
-        "Conférence exposant":.53, "Passage sur stand":.4 } },
+        "Borne libre-service":.6, "Conférence exposant":.53, "Passage sur stand":.4 } },
     { cle:"_complet", libelle:"Complétude de la fiche", poids:15, valeurs:null }
   ]
 };
@@ -5467,11 +5511,12 @@ const S = {
     { id:"suivi",   nom:"Action de suivi", type:"liste", requis:true }
   ],
   online:true, crmCible:"salesforce",
-  qCarnet:"", fCarnet:{ salon:null, source:null, statut:null, opportunite:null }
+  qCarnet:"", fCarnet:{ salon:null, source:null, statut:null, opportunite:null },
+  kiosque:{ etape:"accueil", saisie:{}, autoReset:true, interet:true, optin:true, compteur:1 }
 };
 
 const VALEURS = {
-  origine:["Passage sur stand","Rendez-vous planifié","Recommandation partenaire","Conférence exposant","Contact agent local"],
+  origine:["Passage sur stand","Rendez-vous planifié","Recommandation partenaire","Conférence exposant","Contact agent local","Borne libre-service"],
   profil:["Fabricant","Distributeur","Intégrateur","Bureau d'études","Négociant","Utilisateur final"],
   niveau:["Projet budgété","Appel d'offres en cours","Projet à l'étude","Renouvellement parc","Veille technologique"],
   machine:["Tréfileuse TX-900","Ligne de recuit AN-400","Cableuse CB-220","Redresseuse-coupeuse RC-70","Banc d'essai QC-12"],
@@ -5549,7 +5594,8 @@ const CONTRIB = {
   suivi:   { poids:20, r:{ "Devis sous 48 h":1, "Visite usine à planifier":.8,
                            "Transmettre à l'agent local":.5, "Envoi documentation":.4, "Rappel dans 3 mois":.2 } },
   origine: { poids:15, r:{ "Rendez-vous planifié":1, "Recommandation partenaire":.87,
-                           "Contact agent local":.67, "Conférence exposant":.53, "Passage sur stand":.4 } }
+                           "Contact agent local":.67, "Borne libre-service":.6,
+                           "Conférence exposant":.53, "Passage sur stand":.4 } }
 };
 const SEUILS_BANDE = [60, 75];
 
@@ -5761,6 +5807,7 @@ const NAV = {
   terrain: [
     { id:"terrain",  nom:"Application terrain", icone:"scan" },
     { id:"macarte",  nom:"Ma carte",            icone:"card" },
+    { id:"kiosque",  nom:"Mode kiosque",       icone:"table" },
     { id:"mesleads", nom:"Mes leads",           icone:"table" }
   ],
   manager: [
@@ -5880,7 +5927,7 @@ function render(){
   document.getElementById("mobnav").innerHTML = nav.replace(/<div class="navgroup">.*?<\/div>/g, "");
 
   const views = {
-    accueil: vueAccueil, terrain: vueTerrain, macarte: vueMaCarte, mesleads: vueMesLeads,
+    accueil: vueAccueil, terrain: vueTerrain, macarte: vueMaCarte, kiosque: vueKiosque, mesleads: vueMesLeads,
     dashboard: vueDashboard, carnet: vueCarnet, leads: vueLeads, equipe: vueEquipe, crm: vueCRM, relances: vueRelances,
     builder: vueBuilder, scoring: vueScoring, connecteurs: vueConnecteurs, conformite: vueConformite
   };
@@ -7284,6 +7331,235 @@ function vueCarnet(){
 }
 
 /* ============================================================
+   Mode kiosque — la borne en libre-service sur le stand.
+
+   Une tablette posée sur le comptoir. Le visiteur saisit lui-même ses
+   coordonnées pendant que le commercial est occupé avec quelqu'un d'autre.
+
+   C'est le chemin de données le plus propre du produit, encore plus que
+   l'échange de carte numérique : aucune photo, aucune extraction, aucune
+   erreur de lecture. La personne écrit son propre nom.
+
+   Trois contraintes qui gouvernent tout cet écran :
+   — un visiteur debout ne remplit pas un formulaire de douze champs ;
+   — l'écran doit se réarmer seul, sinon le suivant lit les données du précédent ;
+   — le consentement doit être visible et explicite, parce que c'est ici que
+     la personne fournit ses données de sa propre main.
+   ============================================================ */
+
+const KIOSQUE_ETAPES = ["accueil", "coordonnees", "interet", "merci"];
+
+/** Le formulaire de la borne reprend les champs configurés par l'admin,
+ *  mais n'en garde que deux : au-delà, le visiteur abandonne. */
+function champsKiosque(){
+  return S.champs.filter(function(c){ return c.requis; }).slice(0, 2);
+}
+
+function vueKiosque(){
+  return '<div class="page">' +
+    '<div class="pagehead">' +
+      '<p class="eyebrow">Sur le stand</p>' +
+      '<h1>Mode kiosque</h1>' +
+      '<p>Une tablette posée sur le comptoir. Le visiteur saisit lui-même ses coordonnées ' +
+        'pendant que l’équipe est occupée. Aucune photo, aucune extraction, donc aucune erreur ' +
+        'de lecture : c’est la donnée la plus propre que le stand puisse produire.</p>' +
+    '</div>' +
+
+    '<div class="terrainwrap">' +
+      '<div class="phoneside">' + tabletteHTML() + '</div>' +
+      '<div>' +
+        '<div class="callout">' +
+          '<h4>Ce que la borne change</h4>' +
+          '<p>Elle capture les visiteurs que personne n’a eu le temps d’aborder. ' +
+            'Sur un stand saturé, c’est la moitié du flux.</p>' +
+        '</div>' +
+        '<div class="rail" style="margin-top:18px">' +
+          [["Elle tourne sans surveillance",
+            "L’écran se réarme tout seul après chaque visiteur. Sans ce réarmage, le suivant lit les " +
+            "coordonnées du précédent — et la borne devient un incident de confidentialité."],
+           ["Deux champs métier, pas douze",
+            "La borne n’affiche que les champs marqués obligatoires par l’administrateur, et au maximum " +
+            "deux. Un visiteur debout devant une tablette n’en remplira pas davantage."],
+           ["Le consentement est donné par la personne elle-même",
+            "C’est le seul mode de capture où la personne saisit ses données de sa main. La preuve de " +
+            "consentement est horodatée et conservée avec la fiche."],
+           ["Le lead entre dans le même flux",
+            "Il rejoint La Pile, prend un score, et part au CRM comme les autres. La borne n’est pas " +
+            "un silo : c’est une porte d’entrée de plus."]
+          ].map(function(s, i){
+            return '<div class="step on"><div class="n num">' + (i+1) + '</div><div>' +
+                   '<h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p></div></div>';
+          }).join("") +
+        '</div>' +
+        '<div class="card card-p" style="margin-top:16px">' +
+          '<h3 style="font-size:14px">Réglages de la borne</h3>' +
+          '<div style="display:flex;flex-direction:column;gap:11px;margin-top:12px">' +
+            reglageKiosque("Réarmage automatique", "kAuto", S.kiosque.autoReset,
+              "Efface la saisie et revient à l’accueil après chaque visiteur.") +
+            reglageKiosque("Demander l’intérêt produit", "kInteret", S.kiosque.interet,
+              "Ajoute une étape de qualification. À couper si le flux est très dense.") +
+            reglageKiosque("Consentement marketing", "kOptin", S.kiosque.optin,
+              "Case distincte de la prospection commerciale, jamais pré-cochée.") +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function reglageKiosque(nom, cle, actif, aide){
+  return '<button type="button" class="fieldrow bc-appui" data-kset="' + cle + '" ' +
+    'aria-pressed="' + (actif ? "true" : "false") + '" style="text-align:left;width:100%">' +
+    '<span style="flex:1"><span class="fn">' + esc(nom) + '</span>' +
+      '<span class="ft">' + esc(aide) + '</span></span>' +
+    '<span class="chip" aria-hidden="true"' + (actif ? ' style="background:var(--strong);border-color:var(--strong);color:var(--on-strong);font-weight:600"' : '') + '>' +
+      (actif ? "Activé" : "Coupé") + '</span></button>';
+}
+
+/* ---------- la tablette ---------- */
+function tabletteHTML(){
+  const e = S.kiosque.etape;
+  const corps = { accueil:kAccueil, coordonnees:kCoordonnees, interet:kInteret, merci:kMerci }[e] || kAccueil;
+  return '<div class="tablette"><div class="tablettescreen">' +
+    '<div class="kbandeau">' +
+      '<span style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px">' +
+        ic("card",16) + 'Bincham Industries</span>' +
+      '<span style="font-size:11.5px;color:var(--f-texte-3)">' + esc(SEED.salon.nom) + ' · ' + esc(SEED.salon.stand) + '</span>' +
+    '</div>' +
+    '<div class="kcorps">' + corps() + '</div>' +
+    '<div class="kpied">' +
+      KIOSQUE_ETAPES.filter(function(x){ return x !== "interet" || S.kiosque.interet; })
+        .map(function(x){ return '<span class="kpoint' + (x === e ? " on" : "") + '"></span>'; }).join("") +
+    '</div>' +
+  '</div></div>';
+}
+
+function kAccueil(){
+  return '<div class="ketape bc-cascade" style="text-align:center;justify-content:center">' +
+    '<div>' +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--jade-vif)">Restons en contact</div>' +
+      '<h2 style="font-size:30px;margin-top:12px;line-height:1.15;letter-spacing:-.03em">Laissez-nous vos coordonnées</h2>' +
+      '<p style="font-size:14px;color:var(--f-texte-2);margin-top:14px;max-width:34ch;margin-inline:auto;line-height:1.6">' +
+        'Nous vous envoyons la documentation et un contact sous 48 heures. ' +
+        'Deux champs suffisent.</p>' +
+    '</div>' +
+    '<button type="button" class="bigbtn bc-appui" data-kgo="coordonnees" style="margin-top:26px">' +
+      'Commencer' + ic("right",20) + '</button>' +
+  '</div>';
+}
+
+function kCoordonnees(){
+  const v = S.kiosque.saisie;
+  const champ = function(cle, lbl, type, ph){
+    return '<label class="kfield">' +
+      '<span>' + esc(lbl) + '</span>' +
+      '<input type="' + type + '" data-kf="' + cle + '" value="' + esc(v[cle] || "") + '" ' +
+        'placeholder="' + esc(ph) + '" autocomplete="off" spellcheck="false">' +
+    '</label>';
+  };
+  const pret = (v.nom || "").trim() && (v.email || "").trim();
+  return '<div class="ketape bc-cascade">' +
+    '<h2 style="font-size:22px;letter-spacing:-.02em">Vos coordonnées</h2>' +
+    '<div style="display:flex;flex-direction:column;gap:11px;margin-top:16px">' +
+      champ("nom", "Nom et prénom", "text", "Andreas Wolter") +
+      champ("societe", "Société", "text", "Rheinstahl Draht GmbH") +
+      champ("email", "Adresse e-mail", "email", "a.wolter@exemple.com") +
+      champ("tel", "Téléphone (facultatif)", "tel", "+49 211 55 40 18") +
+    '</div>' +
+    '<label class="kconsent">' +
+      '<input type="checkbox" data-kf="consent"' + (v.consent ? " checked" : "") + '>' +
+      '<span>J’accepte d’être recontacté par Bincham Industries au sujet de ma demande. ' +
+        'Mes données sont conservées 24 mois et je peux demander leur suppression à tout moment.</span>' +
+    '</label>' +
+    (S.kiosque.optin
+      ? '<label class="kconsent">' +
+        '<input type="checkbox" data-kf="optin"' + (v.optin ? " checked" : "") + '>' +
+        '<span>Je souhaite aussi recevoir les actualités produit. (facultatif)</span></label>'
+      : "") +
+    '<button type="button" class="bigbtn bc-appui" data-kgo="' + (S.kiosque.interet ? "interet" : "merci") + '" ' +
+      'style="margin-top:18px"' + (pret && v.consent ? "" : " disabled") + '>' +
+      'Continuer' + ic("right",20) + '</button>' +
+    (pret && v.consent ? "" :
+      '<p style="font-size:11.5px;color:var(--f-texte-3);text-align:center;margin-top:10px">' +
+        'Nom, e-mail et accord de recontact sont nécessaires pour continuer.</p>') +
+  '</div>';
+}
+
+function kInteret(){
+  const v = S.kiosque.saisie;
+  return '<div class="ketape bc-cascade">' +
+    '<h2 style="font-size:22px;letter-spacing:-.02em">Ce qui vous amène</h2>' +
+    '<p style="font-size:13px;color:var(--f-texte-2);margin-top:6px">Une réponse par ligne, ou aucune.</p>' +
+    champsKiosque().map(function(c){
+      return '<div style="margin-top:18px">' +
+        '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--f-texte-3);margin-bottom:9px">' +
+          esc(c.nom) + '</div>' +
+        '<div class="qchips">' + (VALEURS[c.id] || []).map(function(x){
+          return '<button type="button" class="qchip bc-appui" data-kq="' + esc(c.id) + '" data-v="' + esc(x) + '" ' +
+                 'aria-pressed="' + (v[c.id] === x ? "true" : "false") + '" style="min-height:44px;font-size:13.5px">' +
+                 esc(x) + '</button>';
+        }).join("") + '</div></div>';
+    }).join("") +
+    '<button type="button" class="bigbtn bc-appui" data-kgo="merci" style="margin-top:24px">' +
+      'Terminer' + ic("check",20) + '</button>' +
+  '</div>';
+}
+
+function kMerci(){
+  const v = S.kiosque.saisie;
+  return '<div class="ketape" style="text-align:center;justify-content:center">' +
+    '<div class="bc-pop">' +
+      '<div style="width:74px;height:74px;border-radius:50%;background:rgba(0,214,154,.16);' +
+        'border:1px solid rgba(0,214,154,.42);color:var(--jade-vif);display:grid;place-items:center;margin:0 auto">' +
+        ic("check",34) + '</div>' +
+      '<h2 style="font-size:26px;margin-top:18px;letter-spacing:-.02em">Merci' +
+        (v.nom ? ', ' + esc(String(v.nom).split(" ")[0]) : "") + '</h2>' +
+      '<p style="font-size:14px;color:var(--f-texte-2);margin-top:12px;max-width:32ch;margin-inline:auto;line-height:1.6">' +
+        'Vous recevez la documentation sous 48 heures. Bonne visite du salon.</p>' +
+      '<p style="font-size:11.5px;color:var(--f-texte-3);margin-top:20px">' +
+        'Consentement enregistré · ' + esc(SEED.salon.nom) + '</p>' +
+    '</div>' +
+    '<div style="margin-top:26px">' +
+      '<button type="button" class="bigbtn bc-appui" data-kgo="accueil">Visiteur suivant</button>' +
+      (S.kiosque.autoReset
+        ? '<p style="font-size:11.5px;color:var(--f-texte-3);text-align:center;margin-top:11px">' +
+          'Réarmage automatique dans <b id="k-compte" style="color:var(--f-texte)">8</b> secondes</p>'
+        : '<p style="font-size:11.5px;color:#F2B457;text-align:center;margin-top:11px">' +
+          'Réarmage automatique coupé : la saisie reste à l’écran.</p>') +
+    '</div>' +
+  '</div>';
+}
+
+/** Transforme la saisie de la borne en lead, dans le même flux que les autres. */
+function enregistrerKiosque(){
+  const v = S.kiosque.saisie;
+  if (!(v.nom || "").trim()) return;
+  const morceaux = String(v.nom).trim().split(/\s+/);
+  const prenom = morceaux.shift();
+  const nom = morceaux.join(" ") || prenom;
+  const l = {
+    id:"K" + (S.leads.length + 1) + "-" + S.kiosque.compteur,
+    prenom:prenom, nom:nom, fonction:"", societe:v.societe || "",
+    pays:"", codePays:"", email:v.email || "", tel:v.tel || "",
+    // Les reponses du visiteur priment ; l origine ne retombe sur la borne
+    // que s il n a rien choisi. Ecraser sa reponse ferait perdre des points
+    // qu il a lui-meme donnes.
+    origine:v.origine || "Borne libre-service",
+    profil:v.profil || "", machine:v.machine || "", produit:v.produit || "",
+    niveau:v.niveau || "", suivi:v.suivi || "",
+    commercial:S.me, date:"2026-06-17", note:"", crm:false,
+    consentement:true, optin:!!v.optin, source:"Borne libre-service",
+    salon:SEED.salon.nom, salonId:"wire26",
+    qualifieEn:1, serie:0, verso:false
+  };
+  const d = scoreDetail(l);
+  l.score = d.total; l.statut = statutDe(d.total);
+  S.leads.unshift(l);
+  S.kiosque.compteur++;
+  sauver();
+}
+
+/* ============================================================
    Connecteurs CRM et mapping des champs.
 
    Les noms d'objets et de champs sont les noms d'API réels de chaque
@@ -8084,6 +8360,27 @@ document.addEventListener("click", function(ev){
   }
   if (near("#btn-back")) { S.pscreen = null; S.pdraft = null; rendreEnGardantLeFocus(); return; }
 
+  /* --- Mode kiosque --- */
+  if ((el = near("[data-kgo]"))) {
+    const vers = el.dataset.kgo;
+    if (vers === "merci") enregistrerKiosque();
+    if (vers === "accueil") S.kiosque.saisie = {};
+    S.kiosque.etape = vers;
+    render();
+    if (vers === "merci" && S.kiosque.autoReset) armerRearmage();
+    return;
+  }
+  if ((el = near("[data-kq]"))) {
+    const c = el.dataset.kq;
+    S.kiosque.saisie[c] = (S.kiosque.saisie[c] === el.dataset.v) ? "" : el.dataset.v;
+    rendreEnGardantLeFocus(); return;
+  }
+  if ((el = near("[data-kset]"))) {
+    const m = { kAuto:"autoReset", kInteret:"interet", kOptin:"optin" }[el.dataset.kset];
+    if (m) { S.kiosque[m] = !S.kiosque[m]; sauver(); rendreEnGardantLeFocus(); }
+    return;
+  }
+
   /* --- Devoilement --- */
   if (near("#dev-fin")) { S.devoile = null; S.ptab = S.pile.length ? "pile" : "capture"; rendreEnGardantLeFocus(); return; }
   if (near("#dev-corriger")) {
@@ -8270,6 +8567,13 @@ document.addEventListener("input", function(ev){
     if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
     return;
   }
+  if (t.dataset && t.dataset.kf) {
+    // La borne ne re-rend pas a chaque frappe : on ne veut ni perte de focus
+    // ni clavier virtuel qui se referme. Seul l etat du bouton est rafraichi.
+    S.kiosque.saisie[t.dataset.kf] = (t.type === "checkbox") ? t.checked : t.value;
+    majBoutonKiosque();
+    return;
+  }
   if (t.dataset && t.dataset.fld && S.pdraft) {
     S.pdraft[t.dataset.fld] = t.value;
     S.pdraft.conf[t.dataset.fld] = 1;   // corrigé par un humain : plus aucun doute
@@ -8314,6 +8618,38 @@ document.addEventListener("keydown", function(ev){
 function cablerVue(){
   animerCompteurs(document.getElementById("main"));
   if (S.devoile) jouerDevoilement();
+}
+
+/** Active ou desactive le bouton de la borne sans re-rendre l ecran :
+ *  un re-rendu ferait perdre le focus et replierait le clavier virtuel. */
+function majBoutonKiosque(){
+  const b = document.querySelector(".tablettescreen [data-kgo='interet'], .tablettescreen [data-kgo='merci']");
+  if (!b) return;
+  const v = S.kiosque.saisie;
+  const pret = String(v.nom || "").trim() && String(v.email || "").trim() && v.consent;
+  b.disabled = !pret;
+  const aide = b.parentElement && b.parentElement.querySelector("p");
+  if (aide) aide.style.display = pret ? "none" : "";
+}
+
+/** Rearmage : la borne revient a l accueil pour le visiteur suivant.
+ *  Sans lui, le suivant lirait les coordonnees du precedent. */
+let minuterieKiosque = null;
+function armerRearmage(){
+  clearInterval(minuterieKiosque);
+  let reste = 8;
+  minuterieKiosque = setInterval(function(){
+    reste--;
+    const el = document.getElementById("k-compte");
+    if (!el) { clearInterval(minuterieKiosque); return; }
+    el.textContent = String(reste);
+    if (reste <= 0) {
+      clearInterval(minuterieKiosque);
+      S.kiosque.saisie = {};
+      S.kiosque.etape = "accueil";
+      render();
+    }
+  }, 1000);
 }
 /* Valeurs de secours quand la correction porte sur un champ de complétude. */
 const MODELE_COMPLET = {
