@@ -6487,32 +6487,27 @@ function poserEchelle(){
 /* ============================================================
    Page d'ouverture.
 
-   Règle d'écriture tenue ici : on décrit des GESTES et des CHIFFRES,
-   jamais des bénéfices. « Il appuie, la prise entre dans La Pile » est
-   vérifiable à l'écran ; « gagnez du temps » ne l'est pas.
+   DEUX RÈGLES TENUES ICI, ET ELLES SE RENFORCENT.
 
-   Chaque chiffre affiché est lu dans le code au moment du rendu, jamais
-   recopié à la main : si le barème change, la page change avec lui.
-   Chaque section porte un bouton qui ouvre l'écran qui la prouve, et
-   une ligne « ce que ça ne fait pas ».
+   1. Aucune donnée du bac à sable ne remonte sur cette page.
+      Ni compte de leads, ni budget de salon, ni nombre de contacts au
+      carnet, ni nombre de pays. Ces chiffres décrivent un jeu de
+      démonstration, pas un client : les afficher en page d'accueil,
+      c'est vendre une donnée fausse. Ils vivent dans les vues Commercial,
+      Manager et Admin, où l'on comprend qu'on manipule une maquette.
+
+   2. On décrit des GESTES, jamais des bénéfices. « Il appuie, la prise
+      entre dans La Pile » est vérifiable en trois clics ; « gagnez du
+      temps » ne l'est pas.
+
+   Ce qui reste chiffré est écrit en toutes lettres et porte sur le
+   comportement du produit — quatre étapes, deux champs, huit secondes —
+   que le visiteur constate lui-même en ouvrant l'écran d'à côté.
    ============================================================ */
 
-/** Les trois solutions. C'est la première chose qu'un visiteur doit
- *  comprendre : trois métiers distincts, un seul parcours. */
-function solutions(){
-  const nCRM = Object.keys(CRM).length;
-  const champsCRM = Object.keys(CRM).map(function(k){ return CRM[k].champs.length; });
-  const poidsTotal = S.scoring.criteres.reduce(function(s, c){ return s + c.poids; }, 0);
-  const nValeurs = Object.keys(VALEURS).reduce(function(s, k){ return s + VALEURS[k].length; }, 0);
-  const carnet = carnetComplet();
-  const nSalons = uniq(carnet.map(function(c){ return c.salon; })).length;
-  const nSources = uniq(carnet.map(function(c){ return c.source; }).filter(Boolean)).length;
-  const nPays = uniq(carnet.map(function(c){ return c.pays; }).filter(Boolean)).length;
-  const nDoublons = doublonsCarnet(carnet);
-  const nEtapes = KIOSQUE_ETAPES.filter(function(x){
-    return x !== "interet" || S.kiosque.interet; }).length;
-
-  return [
+/** Les trois solutions. C'est la première chose à comprendre :
+ *  trois métiers distincts, un seul parcours. */
+const SOLUTIONS = [
   {
     n: "01",
     titre: "La carte de visite",
@@ -6520,29 +6515,22 @@ function solutions(){
     etapes: [
       ["Il cadre et appuie sur le déclencheur.",
        "La prise entre dans La Pile, écrite sur l’appareil. Aucun formulaire ne s’ouvre, " +
-       "aucun réseau n’est attendu, le viseur se réarme."],
+       "aucun réseau n’est attendu, le viseur se réarme aussitôt."],
       ["Il ouvre La Pile pendant un creux.",
        "Les champs dont la lecture est douteuse sont remontés en tête de fiche, chacun " +
-       "étiqueté de son pourcentage de confiance."],
+       "étiqueté « à vérifier » avec son niveau de confiance."],
       ["Il corrige, puis il répond au formulaire du salon.",
        "Le score se recalcule à chaque appui, et le détail s’affiche sous les champs : " +
        "critère, valeur retenue, points obtenus sur le maximum."],
       ["Il enregistre.",
-       "Le score monte, s’arrête net s’il frôle un seuil, puis la bande tombe avec " +
-       "une échéance de réponse datée en jours ouvrés."]
-    ],
-    chiffres: [
-      ["6", "champs portent un niveau de confiance"],
-      ["0,80", "sous ce seuil, le champ remonte « à vérifier »"],
-      [String(nCRM), "CRM mappés, de " + Math.min.apply(null, champsCRM) + " à " +
-                     Math.max.apply(null, champsCRM) + " champs"],
-      [String(nSources), "modes de capture au carnet"]
+       "Le score monte, s’arrête net s’il frôle un seuil, puis la bande tombe avec une " +
+       "échéance de réponse datée en jours ouvrés."]
     ],
     aller: "terrain|terrain|pile",
     bouton: "Ouvrir La Pile",
     pas: "Il n’y a pas de reconnaissance de texte dans cette démonstration : le déclencheur " +
-         "rejoue cinq cartes d’exemple. L’écriture CRM n’est pas branchée non plus — " +
-         "« pousser » marque la fiche comme transmise, le mapping est réel, l’appel ne l’est pas."
+         "rejoue des cartes d’exemple. L’écriture CRM n’est pas branchée non plus — le mapping " +
+         "est réel, l’appel ne l’est pas."
   },
   {
     n: "02",
@@ -6550,64 +6538,48 @@ function solutions(){
     quoi: "L’administrateur écrit le formulaire du salon et le barème. Le commercial n’a qu’à répondre.",
     etapes: [
       ["Avant le salon, l’administrateur ordonne ses champs.",
-       "Six champs, réordonnables aux flèches, chacun basculé entre obligatoire et " +
-       "facultatif d’un clic. L’aperçu du téléphone se redessine à côté, dans le même ordre."],
+       "Il les monte, les descend, et bascule chacun entre obligatoire et facultatif d’un " +
+       "clic. L’aperçu du téléphone se redessine à côté, dans le même ordre."],
       ["Il tire un curseur de pondération.",
-       "Les " + S.leads.length + " leads du salon sont rescorés à l’instant, sans validation, " +
-       "et l’histogramme des bandes bouge sous ses yeux."],
+       "Les leads déjà saisis sont rescorés à l’instant, sans validation, et l’histogramme " +
+       "des bandes bouge sous ses yeux."],
       ["Sur le stand, le commercial tape des pastilles.",
        "Il ne voit ni curseur, ni pondération, ni réglage. La complexité vit chez " +
        "l’administrateur, jamais dans sa main."],
       ["Un visiteur que personne n’a abordé remplit la borne.",
-       nEtapes + " étapes, deux champs métier au maximum, consentement bloquant. La borne " +
+       "Quatre étapes, deux champs métier au maximum, consentement bloquant. La borne " +
        "s’efface et revient à l’accueil huit secondes après le remerciement."]
-    ],
-    chiffres: [
-      [String(S.scoring.criteres.length), "critères pour " + poidsTotal + " points"],
-      [S.scoring.seuils.tiede + " · " + S.scoring.seuils.chaud, "les deux seuils de bande, réglables"],
-      [DELAI_BANDE["Chaud"] + " · " + DELAI_BANDE["Tiède"] + " · " + DELAI_BANDE["Froid"],
-       "jours ouvrés pour répondre, selon la bande"],
-      [String(nValeurs), "valeurs proposées sur les " + Object.keys(VALEURS).length + " listes"]
     ],
     aller: "admin|scoring|",
     bouton: "Tirer un curseur",
-    pas: "Le formulaire n’a pas de logique conditionnelle, pas de version multilingue, et " +
-         "ses six champs ne peuvent être ni ajoutés ni supprimés. La borne recueille une case " +
-         "cochée, pas une signature."
+    pas: "Le formulaire n’a pas de logique conditionnelle, pas de version multilingue, et ses " +
+         "champs ne peuvent être ni ajoutés ni supprimés. La borne recueille une case cochée, " +
+         "pas une signature."
   },
   {
     n: "03",
     titre: "La qualité du carnet",
     quoi: "Mesurer ce que le stand a capté : ce qui manque, ce qui est douteux, ce qui est en double.",
     etapes: [
-      ["Chaque fiche est notée sur cinq champs.",
-       "E-mail, téléphone, fonction, machine, produit. La complétude pèse " +
-       (S.scoring.criteres.filter(function(c){ return c.cle === "_complet"; })[0] || {poids:15}).poids +
-       " points sur " + poidsTotal + " : une fiche vide ne peut pas être chaude."],
+      ["Chaque fiche est notée sur sa complétude.",
+       "E-mail, téléphone, fonction, machine, produit. La complétude entre dans le score : " +
+       "une fiche vide ne peut pas être chaude."],
       ["L’application nomme le geste qui manque.",
-       "Elle balaie toutes les valeurs possibles, retient le plus petit geste suffisant, " +
-       "et l’écrit : « Renseigner le téléphone → 63 / 100, Tiède »."],
+       "Elle balaie toutes les valeurs possibles, retient le plus petit geste suffisant, et " +
+       "l’écrit en clair : quel champ remplir, et le score que ça donnerait."],
       ["Le carnet traverse les salons.",
-       carnet.length + " contacts sur " + nSalons + " éditions et " + nPays + " pays, tous modes " +
-       "de capture confondus, dans une seule table filtrable."],
+       "Un lead appartient à une édition ; un contact appartient à l’entreprise. Le carnet " +
+       "réunit les deux, tous modes de capture confondus, dans une seule table filtrable."],
       ["Il compte ses doublons.",
-       "Sur trois clés : même e-mail, même téléphone, ou même personne dans la même société. " +
-       nDoublons + " détectés sur le carnet actuel."]
-    ],
-    chiffres: [
-      [String(carnet.length), "contacts au carnet, sur " + nSalons + " éditions"],
-      [String(CHAMPS_COMPLETUDE.length), "champs mesurés par la complétude"],
-      ["3", "clés de rapprochement des doublons"],
-      [String(nDoublons), "doublons détectés au carnet"]
+       "Sur trois clés : même e-mail, même téléphone, ou même personne dans la même société."]
     ],
     aller: "manager|carnet|",
     bouton: "Ouvrir le carnet",
-    pas: "BinchamCard ne va chercher aucune donnée à l’extérieur : ni registre du commerce, " +
-         "ni annuaire, ni signature d’e-mail. Il mesure ce que le stand a capté, il ne le " +
-         "complète pas. Et les doublons sont comptés, pas encore fusionnés."
+    pas: "BinchamCard ne va chercher aucune donnée à l’extérieur : ni registre du commerce, ni " +
+         "annuaire, ni signature d’e-mail. Il mesure ce que le stand a capté, il ne le complète " +
+         "pas. Et les doublons sont comptés, pas encore fusionnés."
   }
-  ];
-}
+];
 
 /** Les trois rôles. Manipulables en direct depuis la barre du haut. */
 const ROLES = [
@@ -6636,13 +6608,6 @@ const ROLES = [
 ];
 
 function vueAccueil(){
-  const SOL = solutions();
-  const carnet = carnetComplet();
-  const qualifies = S.leads.filter(qualifie).length;
-  const nCRM = Object.keys(CRM).length;
-  const coutTotal = Object.keys(SEED.budgets || {}).reduce(function(s, k){
-    return s + SEED.budgets[k].total; }, 0);
-
   return '' +
   '<div class="hero">' +
     '<p class="eyebrow">Capture et qualification de leads en salon</p>' +
@@ -6653,15 +6618,20 @@ function vueAccueil(){
     '<div class="ctas">' +
       '<button type="button" class="btn btn-primary" data-go="terrain|terrain|pile">' +
         'Qualifier un lead' + ic("right",15) + '</button>' +
-      '<button type="button" class="link" data-go="manager|salons|">Voir le coût par lead ' +
+      '<button type="button" class="link" data-go="manager|salons|">Voir le pilotage par salon ' +
         '<span aria-hidden="true">→</span></button>' +
     '</div>' +
+
+    /* Cette bande portait des chiffres tirés du jeu de démonstration.
+       Elle porte maintenant les trois solutions : un sommaire, pas une
+       statistique. */
     '<div class="herostats">' +
-      '<div><b class="num">' + qualifies + '</b><span>leads qualifiés sur ' + S.leads.length +
-        ' contacts, salon en cours</span></div>' +
-      '<div><b class="num">' + carnet.length + '</b><span>contacts au carnet, sur quatre éditions</span></div>' +
-      '<div><b class="num">' + nf.format(coutTotal) + '&#8239;€</b><span>de budget salon, ramené au lead qualifié</span></div>' +
-      '<div><b class="num">' + nCRM + '</b><span>CRM au mapping publié, champ par champ</span></div>' +
+      SOLUTIONS.map(function(s){
+        return '<div><b class="num" style="font-size:28px">' + s.n + '</b>' +
+          '<span style="margin-top:10px;color:var(--encre);font-weight:600;font-size:15px">' +
+            esc(s.titre) + '</span>' +
+          '<span style="margin-top:4px">' + esc(s.quoi.split(",")[0]) + '</span></div>';
+      }).join("") +
     '</div>' +
   '</div>' +
 
@@ -6670,9 +6640,9 @@ function vueAccueil(){
     /* ---- les trois solutions ---- */
     '<div class="cote"><span class="cote__val">01&nbsp;&nbsp;Les trois solutions</span></div>' +
     '<p class="lead" style="max-width:64ch;margin-bottom:32px">Ce que chacune fait, geste par ' +
-      'geste. Les chiffres sont lus dans l’application au moment où cette page s’affiche.</p>' +
+      'geste. Chaque solution ouvre l’écran qui la démontre, et dit ce qu’elle ne fait pas.</p>' +
 
-    SOL.map(function(s){
+    SOLUTIONS.map(function(s){
       return '<section class="chart" style="margin-bottom:20px">' +
         '<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">' +
           '<span class="eyebrow" style="color:var(--verm-e)">' + s.n + '</span>' +
@@ -6688,18 +6658,8 @@ function vueAccueil(){
             }).join("") +
           '</div>' +
 
-          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));' +
-            'gap:0;margin-top:24px;border-top:1px solid var(--joint)">' +
-            s.chiffres.map(function(c, i){
-              return '<div style="padding:16px 20px 16px ' + (i ? "20px" : "0") + ';' +
-                (i ? "border-left:1px solid var(--joint)" : "") + '">' +
-                '<b class="num" style="display:block;font-size:26px;line-height:1">' + esc(c[0]) + '</b>' +
-                '<span style="display:block;margin-top:8px;font:400 12px/1.4 var(--f-ui);' +
-                  'color:var(--encre2)">' + esc(c[1]) + '</span></div>';
-            }).join("") +
-          '</div>' +
-
-          '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:20px">' +
+          '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:24px;' +
+            'padding-top:20px;border-top:1px solid var(--joint)">' +
             '<button type="button" class="btn btn-primary btn-sm" data-go="' + esc(s.aller) + '">' +
               esc(s.bouton) + '</button>' +
             '<span class="estampille">l’écran qui le prouve</span>' +
@@ -6739,12 +6699,15 @@ function vueAccueil(){
     '<div class="cote"><span class="cote__val">03&nbsp;&nbsp;Ce que cette démonstration est</span></div>' +
     '<div class="chartgrid g-2">' +
       '<section class="chart">' +
-        '<h3>Tout est manipulable, rien ne sort de votre appareil</h3>' +
+        '<h3>Un bac à sable, et il le dit</h3>' +
         '<p class="hint" style="margin-top:10px">' +
-          'Les données sont un jeu de démonstration — salon ' + esc(SEED.salon.nom) + ', ' +
-          S.leads.length + ' leads, ' + SEED.commerciaux.length + ' commerciaux, ' +
-          carnet.length + ' contacts au carnet — conservé dans votre navigateur. Vos ' +
-          'modifications ne sont visibles que par vous et ne quittent pas votre appareil.' +
+          'Les contacts, les salons et les budgets que vous verrez dans les trois rôles sont ' +
+          'inventés pour la démonstration. Aucun chiffre de cette page d’accueil n’en vient : ' +
+          'nous ne présentons pas une donnée fabriquée comme un résultat.' +
+        '</p>' +
+        '<p class="hint" style="margin-top:12px">' +
+          'Tout est modifiable et rien ne sort de chez vous : la maquette est conservée dans ' +
+          'votre navigateur, vos modifications ne sont visibles que par vous.' +
         '</p>' +
         '<div class="body" style="margin-top:16px">' +
           '<button type="button" class="btn btn-ghost btn-sm" id="btn-reset">' +
@@ -6755,10 +6718,10 @@ function vueAccueil(){
         '<h3>Ce qui est simulé, dit une fois pour toutes</h3>' +
         '<div class="body" style="margin-top:10px">' +
           '<ul style="margin:0;padding-left:18px;font:400 13px/1.6 var(--f-ui);color:var(--encre2)">' +
-            '<li>La lecture de carte rejoue cinq cartes d’exemple. Aucune reconnaissance ' +
-              'de texte ne tourne ici.</li>' +
-            '<li>Le mapping des ' + nCRM + ' CRM porte les vrais noms d’API et les champs que ' +
-              'l’API refuse à vide, mais aucun appel n’est émis.</li>' +
+            '<li>La lecture de carte rejoue des cartes d’exemple. Aucune reconnaissance de ' +
+              'texte ne tourne ici.</li>' +
+            '<li>Le mapping CRM porte les vrais noms d’API et les champs que l’API refuse à ' +
+              'vide, mais aucun appel n’est émis.</li>' +
             '<li>La bascule hors ligne change l’affichage ; il n’y a pas de file de reprise ' +
               'derrière.</li>' +
             '<li>Les doublons sont comptés, sans écran pour les fusionner.</li>' +
