@@ -87,38 +87,13 @@
   --f-fond:var(--blanc); --f-surface:var(--creux); --f-haute:var(--piste);
   --f-bord:var(--joint); --f-texte:var(--encre); --f-texte-2:var(--encre2); --f-texte-3:var(--encre3);
   --shadow-sm:none; --shadow-md:none; --shadow-lg:var(--feuille);
+  color-scheme:light;   /* une seule ambiance : la claire */
   --r:var(--r-touche); --r-lg:var(--r-coque);
   --trame:36px;
   --hachure-45:repeating-linear-gradient(45deg,var(--arete) 0 1px,transparent 1px 6px);
   --hachure-fine:repeating-linear-gradient(45deg,var(--arete) 0 1px,transparent 1px 6px);
 }
 
-/* ---- coque nuit : option, jamais le défaut ---- */
-:root[data-theme="dark"]{
-  --blanc:#0E0F11; --creux:#16181B; --piste:#1D2023;
-  --encre:#F2F3F5; --encre2:#A3A9B1; --encre3:#8D939B; --encre3c:#949AA2;
-  --joint:#24272B; --arete:#7C838C;
-  --verm:#FF4D00; --verm-e:#FF7A45; --survol:#141619;
-  --feuille:0 0 0 1px #2A2E33, 0 12px 28px -14px rgba(0,0,0,.7);
-  --on-accent:#0E0F11; --sur-minium:#0E0F11; --on-strong:#0E0F11;
-}
-/* ---- plein soleil sous verrière ---- */
-:root[data-theme="halle"]{
-  --blanc:#FFFFFF; --creux:#EDEFF1; --piste:#E2E5E8;
-  --encre:#000000; --encre2:#3F454C; --encre3:#464C54; --encre3c:#464C54;
-  --joint:#D2D6DA; --arete:#6B727B;
-  --verm:#E03F00; --verm-e:#A82200;
-}
-/* Sous verrière, le contraste maximal l'emporte sur la signature : la touche
-   primaire passe en encre pleine (21:1), et le vermillon reste réservé aux
-   objets graphiques — aiguille, équerre de viseur, rail de sélection.
-   Une légende noire sur #E03F00 ne donne que 4,39:1, sous le seuil. */
-:root[data-theme="halle"] .btn-primary,
-:root[data-theme="halle"] .btn-accent,
-:root[data-theme="halle"] .bigbtn{background:var(--encre);color:#FFFFFF}
-:root[data-theme="halle"] .btn-primary:hover,
-:root[data-theme="halle"] .btn-accent:hover,
-:root[data-theme="halle"] .bigbtn:hover{background:#1C1F24}
 
 /* ============================================================
    Reset
@@ -159,25 +134,22 @@ h4{font-family:var(--f-ui);font-weight:600;font-size:15px;line-height:1.3;margin
 .brand{display:flex;align-items:center;gap:10px;
   font-family:var(--f-titre);font-weight:600;font-size:20px;letter-spacing:-.02em}
 .brand svg{display:block}
-.brand .bc-sep{width:1px;height:16px;background:var(--joint);margin:0 2px}
-.brand .bc-ev{font:400 13px/1 var(--f-mono);color:var(--encre3);letter-spacing:0}
 .spacer{flex:1}
 
-.roleswitch,.solswitch{
+.roleswitch{
   display:inline-flex;padding:3px;gap:3px;background:var(--creux);
   border-radius:6px;box-shadow:inset 0 1px 0 #DDE1E4
 }
-.roleswitch button,.solswitch button{
+.roleswitch button{
   height:30px;padding:0 12px;border-radius:var(--r-touche);
   font:500 13px/1 var(--f-ui);color:var(--encre3c);white-space:nowrap;
   transition:background 180ms var(--sortie),color 180ms var(--sortie)
 }
-.roleswitch button:hover,.solswitch button:hover{color:var(--encre)}
-.roleswitch button[aria-pressed="true"],.solswitch button[aria-pressed="true"]{
+.roleswitch button:hover{color:var(--encre)}
+.roleswitch button[aria-pressed="true"]{
   background:var(--blanc);color:var(--encre);font-weight:600;box-shadow:0 0 0 1px var(--joint)
 }
-.roleswitch button:active,.solswitch button:active{transform:translateY(1px)}
-.solswitch button{font-size:11px;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.roleswitch button:active{transform:translateY(1px)}
 
 .layout{display:flex;flex:1;min-height:0}
 .sidenav{
@@ -398,7 +370,12 @@ tbody tr:last-child td{border-bottom:0}
    L'appareil — un boîtier fraisé, pas la photo d'un téléphone.
    Rayon de coque 14 px, une seule élévation, aucune encoche.
    ============================================================ */
-.terrainwrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:48px;align-items:start}
+/* L ordre des pistes suit l ordre du balisage : l APPAREIL est premier.
+   Il prend donc la piste auto, dimensionnee sur sa largeur calculee ;
+   le texte prend le reste. Inverser les deux donnait a l appareil une
+   piste souple ecrasee par le max-content du texte : la borne sortait
+   de sa colonne et recouvrait la navigation. */
+.terrainwrap{display:grid;grid-template-columns:auto minmax(0,1fr);gap:48px;align-items:start}
 .phoneside{position:sticky;top:24px;display:flex;justify-content:center}
 /* L appareil ne se laisse pas comprimer : sans flex:none, le conteneur le
    retrecit et le rapport de forme est perdu. */
@@ -615,8 +592,8 @@ tbody tr:last-child td{border-bottom:0}
 .fieldrow + .fieldrow{margin-top:1px}
 .fieldrow:hover{background:var(--survol)}
 .fieldrow .grip{color:var(--encre3)}
-.fieldrow .fn{font:600 15px/1.3 var(--f-ui);letter-spacing:-.008em}
-.fieldrow .ft{font:400 13px/1.45 var(--f-ui);color:var(--encre3c);margin-top:2px}
+.fieldrow .fn{display:block;font:600 15px/1.3 var(--f-ui);letter-spacing:-.008em}
+.fieldrow .ft{display:block;font:400 13px/1.45 var(--f-ui);color:var(--encre3c);margin-top:2px}
 
 /* ---- progression : le vernier remplace toute barre ---- */
 .niveau{display:flex;align-items:center;gap:16px}
@@ -828,7 +805,7 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
    partout sans que chaque composant ait a y penser.
    ------------------------------------------------------------ */
 .pcard,.fraise,.creux,.encart--plaque,.cfield,.input,.search input,
-.kfield input,.chipbar,.roleswitch,.solswitch,.tfoot,.dfoot,th{
+.kfield input,.chipbar,.roleswitch,.tfoot,.dfoot,th{
   --encre3:var(--encre3c)
 }
 
@@ -927,7 +904,6 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
   .kpigrid > :nth-child(n+4){border-top:1px solid var(--joint)}
   .kpigrid > :first-child .val{font-size:38px}
 }
-@media (max-width:1080px){ .solswitch{display:none} }
 @media (max-width:880px){
   html,body{overflow:auto}
   .app{height:auto;min-height:100vh;overflow:visible}
@@ -992,15 +968,8 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
         <rect x="13" y="13.25" width="4" height="1.5" rx=".75" fill="currentColor" opacity=".5"/>
       </svg>
       <span>BinchamCard</span>
-      <span class="bc-sep" aria-hidden="true"></span>
-      <span class="bc-ev" id="evlabel"></span>
     </div>
     <div class="spacer"></div>
-    <div class="solswitch" role="group" aria-label="Changer d’ambiance">
-      <button type="button" data-sol="light" title="Coque claire">Clair</button>
-      <button type="button" data-sol="dark" title="Coque nuit">Nuit</button>
-      <button type="button" data-sol="halle" title="Plein soleil sous verrière">Halle</button>
-    </div>
     <div class="roleswitch" role="group" aria-label="Changer de rôle">
       <button type="button" data-role="accueil">Présentation</button>
       <button type="button" data-role="terrain">Commercial</button>
@@ -6378,15 +6347,8 @@ function rendreEnGardantLeFocus(){
    Rendu principal
    ============================================================ */
 function render(){
-  document.getElementById("evlabel").textContent =
-    SEED.salon.nom + " · " + SEED.salon.ville + " · " + SEED.salon.stand;
-
   document.querySelectorAll(".roleswitch button").forEach(function(b){
     b.setAttribute("aria-pressed", String(b.dataset.role === S.role));
-  });
-  const sol = document.documentElement.getAttribute("data-theme") || "dark";
-  document.querySelectorAll(".solswitch button").forEach(function(b){
-    b.setAttribute("aria-pressed", String(b.dataset.sol === sol));
   });
 
   const nav = navHTML();
@@ -9131,7 +9093,6 @@ document.addEventListener("click", function(ev){
   if ((el = near("[data-view]")))   { setView(el.dataset.view); return; }
   if ((el = near("[data-crm-go]"))) { S.crmCible = el.dataset.crmGo; setView("crm"); return; }
   if (near("#btn-reset")) { reinitialiser(); return; }
-  if ((el = near("[data-sol]"))) { poserSol(el.dataset.sol); return; }
 
   /* --- téléphone : onglets --- */
   if ((el = near("[data-ptab]"))) {
@@ -9509,18 +9470,6 @@ const MODELE_COMPLET = {
    l interface francaise avec le moteur de synthese anglais. */
 document.documentElement.lang = "fr";
 
-/* Le sol : graphite par defaut, papier ou Halle par choix explicite.
-   Le choix est conserve d une visite a l autre. */
-function poserSol(sol){
-  document.documentElement.setAttribute("data-theme", sol);
-  try { localStorage.setItem("binchamcard.sol", sol); } catch (e) {}
-  render();
-}
-(function solInitial(){
-  let sol = "light";
-  try { sol = localStorage.getItem("binchamcard.sol") || "light"; } catch (e) {}
-  document.documentElement.setAttribute("data-theme", sol);
-})();
 
 charger();
 render();
