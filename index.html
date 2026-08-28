@@ -384,35 +384,80 @@ tbody tr:last-child td{border-bottom:0}
    d'une valeur fixe : sur un portable 13 pouces comme sur un 27 pouces, il
    doit tenir entier sans que le déclencheur soit coupé. La largeur suit le
    rapport de forme, elle n'est jamais imposée. */
+/* ============================================================
+   L APPAREIL EST RENDU A SA RESOLUTION LOGIQUE REELLE.
+
+   Le piege evite ici : reduire la largeur du cadre pour le faire tenir
+   dans l ecran revient a rendre l interface dans 328 px au lieu de 402.
+   Les titres se coupent, la barre d onglets deborde, l ascenseur
+   apparait — on ne regarde plus un iPhone, on regarde une maquette
+   ecrasee.
+
+   L ecran garde donc TOUJOURS ses dimensions reelles, et c est le tout
+   qui est reduit optiquement par un transform : exactement ce que fait
+   l oeil devant un vrai telephone pose plus loin.
+
+     iPhone 17 Pro   ecran 402 x 874 pt, lunette 12 pt  -> 426 x 898
+     iPad Pro 11     ecran 834 x 1194 pt, lunette 24 pt -> 882 x 1242
+
+   --k est pose par poserEchelle() depuis la hauteur reellement libre.
+   ============================================================ */
+/* --l et --h sont portes par l ENVELOPPE, pas par l appareil : une
+   variable descend, elle ne remonte pas. Declarees sur .phone, elles
+   restaient invisibles au calc() de l enveloppe, dont la largeur
+   retombait sur auto — le cadre gardait alors sa taille reelle a
+   l ecran au lieu d etre reduit. */
+.appareil{
+  --k:1;
+  width:calc(var(--l) * var(--k));
+  height:calc(var(--h) * var(--k));
+  flex:none;position:relative
+}
+.appareil.tel{   --l:426px; --h:898px }
+.appareil.borne{ --l:882px; --h:1242px }
+.appareil > *{transform:scale(var(--k));transform-origin:top left}
+
 .phone{
-  /* La largeur est CALCULEE depuis la hauteur, jamais deduite d un
-     aspect-ratio : dans une colonne de grille auto, aspect-ratio cree une
-     dependance circulaire et la colonne s effondre. */
-  --h-appareil:clamp(300px, calc(100dvh - var(--h-chrome, 244px)), 720px);
-  height:var(--h-appareil);
-  width:calc(var(--h-appareil) * 0.5);   /* rapport 360 / 720 */
-  padding:10px;margin:0 auto;
-  background:var(--creux);border-radius:20px;
-  box-shadow:inset 0 0 0 1px var(--joint), 0 1px 0 rgba(16,17,20,.04), 0 24px 48px -28px rgba(16,17,20,.28)
+  --l:426px; --h:898px;
+  width:426px;height:898px;padding:12px;
+  background:var(--creux);border-radius:62px;
+  box-shadow:inset 0 0 0 1px var(--joint), 0 1px 0 rgba(16,17,20,.04),
+             0 24px 48px -28px rgba(16,17,20,.28)
 }
 .phonescreen{
-  width:100%;height:100%;background:var(--blanc);color:var(--encre);
-  border-radius:14px;overflow:hidden;display:flex;flex-direction:column;position:relative;
+  width:402px;height:874px;background:var(--blanc);color:var(--encre);
+  border-radius:50px;overflow:hidden;display:flex;flex-direction:column;position:relative;
   box-shadow:inset 0 0 0 1px var(--joint)
+}
+/* L ilot dynamique : c est lui qui fait lire « iPhone » avant tout le reste. */
+.ilot{
+  position:absolute;top:11px;left:50%;transform:translateX(-50%);
+  width:126px;height:37px;border-radius:var(--r-rond);background:#101114;z-index:5
+}
+/* Un vrai telephone n affiche pas d ascenseur permanent. */
+.pbody::-webkit-scrollbar,.kcorps::-webkit-scrollbar{width:0;height:0}
+.pbody,.kcorps{scrollbar-width:none}
+/* La barre d accueil, dans la marge basse reelle de l iPhone. */
+.barreaccueil{
+  flex:none;height:34px;display:flex;align-items:center;justify-content:center;
+  background:var(--blanc)
+}
+.barreaccueil::after{
+  content:'';width:139px;height:5px;border-radius:var(--r-rond);background:var(--encre);opacity:.28
 }
 .notch{display:none}
 .statusbar{
-  height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;
-  padding:0 16px;font:400 11px/1 var(--f-mono);color:var(--encre3)
+  height:59px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 32px 10px;font:500 15px/1 var(--f-mono);color:var(--encre)
 }
 .pbody{flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
 .ptab{
   flex:none;display:grid;grid-template-columns:repeat(5,1fr);
-  background:var(--blanc);border-top:1px solid var(--joint);padding-bottom:4px
+  background:var(--blanc);border-top:1px solid var(--joint)
 }
 .ptab button{
-  position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 2px 6px;
-  font:600 11px/1 var(--f-ui);letter-spacing:.04em;color:var(--encre3);
+  position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 2px 7px;
+  font:600 11px/1 var(--f-ui);letter-spacing:.02em;color:var(--encre3);white-space:nowrap;
   transition:color 180ms var(--sortie)
 }
 .ptab button[aria-current="page"]{color:var(--encre)}
@@ -437,8 +482,12 @@ tbody tr:last-child td{border-bottom:0}
   transition:background 180ms var(--sortie)
 }
 .prow:hover{background:var(--survol)}
-.prow .pn{font:600 15px/1.3 var(--f-ui);letter-spacing:-.008em}
-.prow .pc{font:400 13px/1.35 var(--f-ui);color:var(--encre3c);margin-top:2px;
+/* Ces deux libelles sont des <span> : sans display:block, overflow et
+   text-overflow n ont aucun effet et le nowrap de .pc empeche la ligne
+   de se couper — le rang deborde alors de l ecran au lieu de couper le
+   texte par des points de suspension. */
+.prow .pn{display:block;font:600 15px/1.3 var(--f-ui);letter-spacing:-.008em}
+.prow .pc{display:block;font:400 13px/1.35 var(--f-ui);color:var(--encre3c);margin-top:2px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bigbtn{
   width:100%;height:52px;background:var(--verm);color:#101114;border-radius:var(--r-touche);
@@ -826,42 +875,44 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
    ============================================================ */
 /* Même règle que l'appareil : la borne tient entière dans l'écran, quelle
    que soit la hauteur disponible. */
+/* iPad Pro 11 : ecran 834 x 1194 pt, lunette 24 pt -> 882 x 1242.
+   Meme regle que le telephone : l ecran garde sa taille reelle, c est le
+   tout qui est reduit. Une borne rendue dans 285 px de large n est pas
+   une borne, c est un telephone deguise. */
 .tablette{
-  --h-appareil:clamp(280px, calc(100dvh - var(--h-chrome, 268px)), 660px);
-  height:var(--h-appareil);
-  width:calc(var(--h-appareil) * 0.75);   /* rapport 3 / 4 */
-  padding:12px;margin:0 auto;
-  background:var(--creux);border-radius:16px;
+  --l:882px; --h:1242px;
+  width:882px;height:1242px;padding:24px;
+  background:var(--creux);border-radius:38px;
   box-shadow:inset 0 0 0 1px var(--joint), 0 24px 48px -28px rgba(16,17,20,.28)
 }
 .tablettescreen{
-  width:100%;height:100%;background:var(--blanc);color:var(--encre);border-radius:10px;
+  width:834px;height:1194px;background:var(--blanc);color:var(--encre);border-radius:18px;
   overflow:hidden;display:flex;flex-direction:column;box-shadow:inset 0 0 0 1px var(--joint)
 }
 .kbandeau{
   flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:20px 24px;border-bottom:1px solid var(--joint);
-  font:600 15px/1 var(--f-ui);letter-spacing:-.008em
+  padding:28px 40px;border-bottom:1px solid var(--joint);
+  font:600 21px/1 var(--f-ui);letter-spacing:-.012em
 }
-.kbandeau > span:last-child{font:400 13px/1 var(--f-mono);color:var(--encre3);text-transform:none}
-.kcorps{flex:1;overflow-y:auto;padding:32px 24px}
+.kbandeau > span:last-child{font:400 17px/1 var(--f-mono);color:var(--encre3);text-transform:none}
+.kcorps{flex:1;overflow-y:auto;padding:56px 72px}
 .ketape{min-height:100%;display:flex;flex-direction:column}
-.kpied{flex:none;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px}
-.kpoint{width:6px;height:6px;border-radius:1px;background:var(--piste)}
-.kpoint.on{background:var(--encre);width:20px}
-.kfield > span{display:block;font:600 11px/1 var(--f-ui);letter-spacing:.06em;
-  text-transform:uppercase;color:var(--encre3c);margin-bottom:8px}
+.kpied{flex:none;display:flex;align-items:center;justify-content:center;gap:8px;padding:28px}
+.kpoint{width:8px;height:8px;border-radius:1px;background:var(--piste)}
+.kpoint.on{background:var(--encre);width:28px}
+.kfield > span{display:block;font:600 14px/1 var(--f-ui);letter-spacing:.06em;
+  text-transform:uppercase;color:var(--encre3c);margin-bottom:12px}
 .kfield input{
-  width:100%;height:56px;padding:0 16px;background:var(--creux);color:var(--encre);
+  width:100%;height:76px;padding:0 24px;background:var(--creux);color:var(--encre);
   border:0;border-radius:var(--r-touche);
   box-shadow:inset 0 0 0 1px var(--arete),inset 0 1px 0 #DDE1E4;
-  font:500 20px/56px var(--f-ui);letter-spacing:-.012em
+  font:500 26px/76px var(--f-ui);letter-spacing:-.012em
 }
 .kfield input::placeholder{color:var(--encre3c);font-weight:400}
 .kfield input:focus{background:var(--blanc);outline:0;box-shadow:inset 0 0 0 1px var(--encre)}
-.kconsent{display:flex;gap:12px;align-items:flex-start;margin-top:20px;font-size:13px;
-  color:var(--encre2);line-height:1.45;cursor:pointer}
-.kconsent input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--verm)}
+.kconsent{display:flex;gap:16px;align-items:flex-start;margin-top:28px;font-size:17px;
+  color:var(--encre2);line-height:1.5;cursor:pointer}
+.kconsent input{width:26px;height:26px;flex:none;margin-top:2px;accent-color:var(--verm)}
 
 /* ---- la plaque : l'ouverture ---- */
 .hero{max-width:1440px;margin:0 auto;padding:96px 24px 48px}
@@ -920,11 +971,8 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
   .mobnav .navitem[aria-current="page"] .badge{color:var(--blanc)}
   .page{padding:24px 16px 64px}
   .hero{padding:48px 16px 32px}
-  /* Sous 880 px la page défile : l'appareil reprend une largeur pleine. */
-  /* Sous 880 px la page defile : l appareil reprend une largeur pleine. */
-  .phone,.tablette{height:auto;max-width:calc(100vw - 32px)}
-  .phone{width:min(360px,100%);aspect-ratio:360/720}
-  .tablette{width:min(480px,100%);aspect-ratio:3/4}
+  /* L appareil garde sa taille reelle ; c est poserEchelle() qui choisit
+     le facteur de reduction, ici depuis la largeur disponible. */
 }
 @media (max-width:760px){
   .topbar{gap:12px;padding:0 16px}
@@ -6365,7 +6413,66 @@ function render(){
   // Les vues qui montrent un appareil lui rendent de la hauteur.
   m.classList.toggle("vue-appareil", S.view === "terrain" || S.view === "kiosque");
   cablerVue();
+  poserEchelle();
 }
+
+/* ============================================================
+   L echelle des appareils.
+
+   L ecran de l appareil est rendu a sa resolution logique REELLE
+   (402 x 874 pour l iPhone, 834 x 1194 pour l iPad) : l interface qu on
+   regarde est donc exactement celle qui tournerait sur l appareil, au
+   pixel pres. Ce qu on ajuste ici n est pas la mise en page, c est la
+   distance : un seul facteur de reduction applique au tout.
+
+   Le facteur ne depend que de la fenetre — jamais de la largeur de la
+   colonne, qui est elle-meme dimensionnee par l appareil. Le mesurer sur
+   le parent creerait une boucle et ferait osciller la mise en page.
+   ============================================================ */
+function poserEchelle(){
+  const appareils = document.querySelectorAll(".appareil");
+  if (!appareils.length) return;
+
+  const zone = document.getElementById("main");
+  const large = zone ? zone.clientWidth - 80 : window.innerWidth - 80;   /* 80 = marges de .page */
+  /* En deux colonnes l appareil ne prend pas plus de 46 % de la zone :
+     au-dela, le texte qui l accompagne devient illisible. En une seule
+     colonne il peut occuper toute la largeur. */
+  const budgetL = window.innerWidth <= 1180 ? large : large * 0.46;
+
+  const rZone = zone ? zone.getBoundingClientRect() : { top:0 };
+
+  appareils.forEach(function(env){
+    const el = env.firstElementChild;
+    if (!el) return;
+    const L = el.classList.contains("tablette") ? 882 : 426;
+    const H = el.classList.contains("tablette") ? 1242 : 898;
+    /* La hauteur libre se mesure depuis la position de repos de l appareil,
+       c est-a-dire son decalage DANS le contenu defilant — pas sa position
+       a l ecran, qui bouge avec le defilement, ni le haut de la zone, qui
+       ignore l en-tete de page place au-dessus. Ainsi mesuree, la valeur
+       est stable et l appareil tient entier sans avoir a defiler. */
+    const decalage = zone
+      ? env.getBoundingClientRect().top - rZone.top + zone.scrollTop
+      : 0;
+    const budgetH = window.innerHeight - rZone.top - decalage - 24;
+    /* Jamais d agrandissement : au-dela de 1 on inventerait un appareil
+       qui n existe pas. Jamais sous 0,26 non plus : en dessous l ecran
+       n est plus lisible et mieux vaut laisser la page defiler. */
+    let k = Math.min(1, budgetH / H, budgetL / L);
+    if (!isFinite(k) || k <= 0) k = 1;
+    env.style.setProperty("--k", Math.max(k, 0.26).toFixed(4));
+  });
+}
+
+/* La hauteur libre change avec la fenetre : l echelle aussi. */
+(function suivreEchelle(){
+  let t = null;
+  window.addEventListener("resize", function(){
+    if (t) cancelAnimationFrame(t);
+    t = requestAnimationFrame(poserEchelle);
+  });
+})();
 
 /* La page d'ouverture est definie dans 03b-ouverture.js. */
 
@@ -6666,8 +6773,8 @@ function phoneHTML(){
               : (ecrans[S.ptab] || pSalon)();
   const plein = S.ptab === "capture" && !S.pscreen && !S.devoile;
 
-  return '<div class="phone"><div class="phonescreen">' +
-    '<div class="notch" aria-hidden="true"></div>' +
+  return '<div class="appareil tel"><div class="phone"><div class="phonescreen">' +
+    '<div class="ilot" aria-hidden="true"></div>' +
     '<div class="statusbar" aria-hidden="true"><span class="num">9:41</span>' +
       '<span style="display:flex;gap:6px;align-items:center">' +
         (S.online ? "" : '<span style="color:var(--warm)">' + ic("offline",13) + '</span>') +
@@ -6683,7 +6790,8 @@ function phoneHTML(){
                '>' + ic(t.icone,19) + b + '<span>' + esc(t.nom) + '</span></button>';
       }).join("") +
     '</div>' +
-  '</div></div>';
+    '<div class="barreaccueil" aria-hidden="true"></div>' +
+  '</div></div></div>';
 }
 
 /* L'écran « Mon salon » est défini dans 04b-salon.js. */
@@ -8166,7 +8274,7 @@ function reglageKiosque(nom, cle, actif, aide){
 function tabletteHTML(){
   const e = S.kiosque.etape;
   const corps = { accueil:kAccueil, coordonnees:kCoordonnees, interet:kInteret, merci:kMerci }[e] || kAccueil;
-  return '<div class="tablette"><div class="tablettescreen">' +
+  return '<div class="appareil borne"><div class="tablette"><div class="tablettescreen">' +
     '<div class="kbandeau">' +
       '<span style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px">' +
         ic("card",16) + 'Bincham Industries</span>' +
@@ -8182,7 +8290,7 @@ function tabletteHTML(){
       KIOSQUE_ETAPES.filter(function(x){ return x !== "interet" || S.kiosque.interet; })
         .map(function(x){ return '<span class="kpoint' + (x === e ? " on" : "") + '"></span>'; }).join("") +
     '</div>' +
-  '</div></div>';
+  '</div></div></div>';
 }
 
 function kAccueil(){
