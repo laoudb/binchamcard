@@ -553,11 +553,23 @@ tbody tr:last-child td{border-bottom:0}
 .cfield input:focus{outline:2px solid var(--encre);outline-offset:2px}
 .cflag{font:600 11px/1 var(--f-ui);letter-spacing:.04em;text-transform:uppercase;
   color:var(--encre2);background:var(--blanc);border-radius:2px;padding:4px 8px}
-.qchips{display:flex;flex-wrap:wrap;gap:6px}
+/* Les valeurs d une meme liste sont des objets de MEME nature : elles
+   doivent avoir la meme taille. Dimensionnees par leur texte dans une
+   boite flex, elles cassaient la ligne la ou le mot tombait — « Passage
+   sur stand » a cote d un « Rendez-vous planifie » deux fois plus large,
+   puis deux valeurs seules sur leur ligne. La grille donne des colonnes
+   egales et des rangs alignes ; une valeur longue passe a la ligne DANS
+   sa case au lieu de deformer la sienne et celles d a cote. */
+/* grid-auto-rows:1fr aligne AUSSI les rangs entre eux : sans lui, un rang
+   portant un libelle sur deux lignes est plus haut que ses voisins et la
+   grille redevient bancale d un rang a l autre. */
+.qchips{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  grid-auto-rows:1fr;gap:8px}
 .qchip{
-  min-height:36px;padding:0 14px;background:var(--blanc);color:var(--encre2);
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  min-height:46px;padding:9px 12px;background:var(--blanc);color:var(--encre2);
   border-radius:var(--r-touche);box-shadow:inset 0 0 0 1px var(--arete);
-  font:500 13px/1 var(--f-ui);
+  font:500 13px/1.25 var(--f-ui);
   transition:background 180ms var(--sortie),color 180ms var(--sortie),box-shadow 180ms var(--sortie)
 }
 .qchip:hover{background:var(--creux)}
@@ -6970,7 +6982,7 @@ function pFiche(){
     return '<fieldset style="margin:14px 0 0;padding:0;border:0;min-width:0">' +
       '<legend style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-4);margin-bottom:7px;padding:0">' +
         esc(ch.nom) +
-        (ch.requis ? ' <span style="color:var(--hot)" title="Champ obligatoire">•</span>'
+        (ch.requis ? ' <span style="color:var(--verm-e)" title="Champ obligatoire">•</span>'
                    : ' <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-4)">(facultatif)</span>') +
         (ch.type === "multi" ? ' <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-4)">— plusieurs choix</span>' : "") +
       '</legend>' +
@@ -8696,7 +8708,7 @@ function vueCRM(){
           cible.champs.map(function(c){
             return '<div class="maprow">' +
               '<span>' + esc(libelleSource(c)) +
-                (c.requis ? ' <span style="color:var(--hot)" title="Champ obligatoire côté CRM">•</span>' : "") +
+                (c.requis ? ' <span style="color:var(--verm-e)" title="Champ obligatoire côté CRM">•</span>' : "") +
                 (c.calc ? ' <span class="tag t-neutral" style="font-size:10px">calculé</span>' : "") + '</span>' +
               '<span class="arr" aria-hidden="true">→</span>' +
               '<span class="mono">' + esc(c.api) + '</span>' +
@@ -8825,7 +8837,7 @@ function vueBuilder(){
           S.champs.slice(0,4).map(function(c){
             return '<div style="margin-bottom:13px">' +
               '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-4);margin-bottom:6px">' +
-                esc(c.nom) + (c.requis ? ' <span style="color:var(--hot)">•</span>' : "") + '</div>' +
+                esc(c.nom) + (c.requis ? ' <span style="color:var(--verm-e)" title="obligatoire">•</span>' : "") + '</div>' +
               '<div class="qchips">' + (VALEURS[c.id] || []).slice(0,4).map(function(v, i){
                 return '<span class="qchip"' + (i === 0 ? ' aria-pressed="true"' : "") + '>' + esc(v) + '</span>';
               }).join("") + '</div></div>';
