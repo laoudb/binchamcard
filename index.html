@@ -6070,10 +6070,18 @@ const CRITERES_QUALIF = ["origine", "profil", "niveau", "suivi"];
 function emailExploitable(l){
   return !!(l.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(l.email).trim()));
 }
+/* Le seuil suit le curseur de l administrateur. Ecrit en dur, il faisait
+   diverger la definition du lead qualifie de la bande Tiede affichee :
+   on deplacait le seuil, les bandes bougeaient, le compte des qualifies
+   restait accroche a 60. */
+function seuilQualif(){
+  return (typeof S !== "undefined" && S.scoring && S.scoring.seuils &&
+          S.scoring.seuils.tiede != null) ? S.scoring.seuils.tiede : SEUILS_BANDE[0];
+}
 function qualifie(l){
   return emailExploitable(l)
       && CRITERES_QUALIF.every(function(k){ return l[k] && String(l[k]).trim(); })
-      && (l.score || 0) >= 60
+      && (l.score || 0) >= seuilQualif()
       && l.consentement === true;
 }
 /** Prête pour le CRM : qualifiée ET complète sur les cinq champs. */
@@ -6479,215 +6487,284 @@ function poserEchelle(){
 /* ============================================================
    Page d'ouverture.
 
-   Elle ne vend pas le scanner : le scanner est une commodité en voie de
-   banalisation, et c'est exactement le terrain où le concurrent allemand
-   est le plus fort. Elle vend ce qu'il ne sait pas faire — la
-   qualification et sa valeur mesurable.
+   Règle d'écriture tenue ici : on décrit des GESTES et des CHIFFRES,
+   jamais des bénéfices. « Il appuie, la prise entre dans La Pile » est
+   vérifiable à l'écran ; « gagnez du temps » ne l'est pas.
 
-   Chaque argument porte un bouton qui ouvre l'écran qui le prouve.
-   Une démonstration se fait en trois clics, pas en trois paragraphes.
+   Chaque chiffre affiché est lu dans le code au moment du rendu, jamais
+   recopié à la main : si le barème change, la page change avec lui.
+   Chaque section porte un bouton qui ouvre l'écran qui la prouve, et
+   une ligne « ce que ça ne fait pas ».
    ============================================================ */
 
-/** Trois preuves, dans l'ordre où on les montre à un partenaire. */
-const PREUVES = [
+/** Les trois solutions. C'est la première chose qu'un visiteur doit
+ *  comprendre : trois métiers distincts, un seul parcours. */
+function solutions(){
+  const nCRM = Object.keys(CRM).length;
+  const champsCRM = Object.keys(CRM).map(function(k){ return CRM[k].champs.length; });
+  const poidsTotal = S.scoring.criteres.reduce(function(s, c){ return s + c.poids; }, 0);
+  const nValeurs = Object.keys(VALEURS).reduce(function(s, k){ return s + VALEURS[k].length; }, 0);
+  const carnet = carnetComplet();
+  const nSalons = uniq(carnet.map(function(c){ return c.salon; })).length;
+  const nSources = uniq(carnet.map(function(c){ return c.source; }).filter(Boolean)).length;
+  const nPays = uniq(carnet.map(function(c){ return c.pays; }).filter(Boolean)).length;
+  const nDoublons = doublonsCarnet(carnet);
+  const nEtapes = KIOSQUE_ETAPES.filter(function(x){
+    return x !== "interet" || S.kiosque.interet; }).length;
+
+  return [
   {
     n: "01",
-    titre: "Le Dévoilement",
-    ou: "Terrain → La Pile → une fiche → Enregistrer",
-    dit: "Nous ne comptons pas les cartes, nous rémunérons la qualification. " +
-         "Le score se révèle, s’arrête net sur le seuil, et nomme le geste le moins cher " +
-         "pour franchir la bande supérieure.",
-    contre: "Chez eux, un score de 0 à 100 calculé en arrière-plan, sans explication " +
-            "et sans retour d’action : le commercial ne voit ni le calcul, ni ce qui lui manque.",
-    aller: "terrain|terrain|pile"
+    titre: "La carte de visite",
+    quoi: "Photographier une carte sur le stand, la trier plus tard, l’envoyer au CRM.",
+    etapes: [
+      ["Il cadre et appuie sur le déclencheur.",
+       "La prise entre dans La Pile, écrite sur l’appareil. Aucun formulaire ne s’ouvre, " +
+       "aucun réseau n’est attendu, le viseur se réarme."],
+      ["Il ouvre La Pile pendant un creux.",
+       "Les champs dont la lecture est douteuse sont remontés en tête de fiche, chacun " +
+       "étiqueté de son pourcentage de confiance."],
+      ["Il corrige, puis il répond au formulaire du salon.",
+       "Le score se recalcule à chaque appui, et le détail s’affiche sous les champs : " +
+       "critère, valeur retenue, points obtenus sur le maximum."],
+      ["Il enregistre.",
+       "Le score monte, s’arrête net s’il frôle un seuil, puis la bande tombe avec " +
+       "une échéance de réponse datée en jours ouvrés."]
+    ],
+    chiffres: [
+      ["6", "champs portent un niveau de confiance"],
+      ["0,80", "sous ce seuil, le champ remonte « à vérifier »"],
+      [String(nCRM), "CRM mappés, de " + Math.min.apply(null, champsCRM) + " à " +
+                     Math.max.apply(null, champsCRM) + " champs"],
+      [String(nSources), "modes de capture au carnet"]
+    ],
+    aller: "terrain|terrain|pile",
+    bouton: "Ouvrir La Pile",
+    pas: "Il n’y a pas de reconnaissance de texte dans cette démonstration : le déclencheur " +
+         "rejoue cinq cartes d’exemple. L’écriture CRM n’est pas branchée non plus — " +
+         "« pousser » marque la fiche comme transmise, le mapping est réel, l’appel ne l’est pas."
   },
   {
     n: "02",
-    titre: "La confiance, champ par champ",
-    ou: "Terrain → La Pile → une fiche",
-    dit: "Chaque champ extrait porte son niveau de confiance. Sous 0,80 il remonte en tête " +
-         "avec « à vérifier ». L’incertitude devient actionnable au moment où la corriger " +
-         "coûte une seconde.",
-    contre: "Chez eux, un taux de lecture global. Une valeur devinée à l’oreille et une valeur " +
-            "lue au registre du commerce ont exactement la même apparence.",
-    aller: "terrain|terrain|pile"
+    titre: "Le rapport de visite",
+    quoi: "L’administrateur écrit le formulaire du salon et le barème. Le commercial n’a qu’à répondre.",
+    etapes: [
+      ["Avant le salon, l’administrateur ordonne ses champs.",
+       "Six champs, réordonnables aux flèches, chacun basculé entre obligatoire et " +
+       "facultatif d’un clic. L’aperçu du téléphone se redessine à côté, dans le même ordre."],
+      ["Il tire un curseur de pondération.",
+       "Les " + S.leads.length + " leads du salon sont rescorés à l’instant, sans validation, " +
+       "et l’histogramme des bandes bouge sous ses yeux."],
+      ["Sur le stand, le commercial tape des pastilles.",
+       "Il ne voit ni curseur, ni pondération, ni réglage. La complexité vit chez " +
+       "l’administrateur, jamais dans sa main."],
+      ["Un visiteur que personne n’a abordé remplit la borne.",
+       nEtapes + " étapes, deux champs métier au maximum, consentement bloquant. La borne " +
+       "s’efface et revient à l’accueil huit secondes après le remerciement."]
+    ],
+    chiffres: [
+      [String(S.scoring.criteres.length), "critères pour " + poidsTotal + " points"],
+      [S.scoring.seuils.tiede + " · " + S.scoring.seuils.chaud, "les deux seuils de bande, réglables"],
+      [DELAI_BANDE["Chaud"] + " · " + DELAI_BANDE["Tiède"] + " · " + DELAI_BANDE["Froid"],
+       "jours ouvrés pour répondre, selon la bande"],
+      [String(nValeurs), "valeurs proposées sur les " + Object.keys(VALEURS).length + " listes"]
+    ],
+    aller: "admin|scoring|",
+    bouton: "Tirer un curseur",
+    pas: "Le formulaire n’a pas de logique conditionnelle, pas de version multilingue, et " +
+         "ses six champs ne peuvent être ni ajoutés ni supprimés. La borne recueille une case " +
+         "cochée, pas une signature."
   },
   {
     n: "03",
-    titre: "L’export auditable",
-    ou: "Pilotage → Export CRM",
-    dit: "Le mapping réel de six CRM, avec les vrais noms d’API, les champs que l’API refuse " +
-         "si on les laisse vides, et les règles de rapprochement avant écriture.",
-    contre: "Chez eux, le mapping personnalisé est une prestation facturée, à tous les paliers, " +
-            "et il n’est pas visible avant achat.",
-    aller: "manager|crm|"
+    titre: "La qualité du carnet",
+    quoi: "Mesurer ce que le stand a capté : ce qui manque, ce qui est douteux, ce qui est en double.",
+    etapes: [
+      ["Chaque fiche est notée sur cinq champs.",
+       "E-mail, téléphone, fonction, machine, produit. La complétude pèse " +
+       (S.scoring.criteres.filter(function(c){ return c.cle === "_complet"; })[0] || {poids:15}).poids +
+       " points sur " + poidsTotal + " : une fiche vide ne peut pas être chaude."],
+      ["L’application nomme le geste qui manque.",
+       "Elle balaie toutes les valeurs possibles, retient le plus petit geste suffisant, " +
+       "et l’écrit : « Renseigner le téléphone → 63 / 100, Tiède »."],
+      ["Le carnet traverse les salons.",
+       carnet.length + " contacts sur " + nSalons + " éditions et " + nPays + " pays, tous modes " +
+       "de capture confondus, dans une seule table filtrable."],
+      ["Il compte ses doublons.",
+       "Sur trois clés : même e-mail, même téléphone, ou même personne dans la même société. " +
+       nDoublons + " détectés sur le carnet actuel."]
+    ],
+    chiffres: [
+      [String(carnet.length), "contacts au carnet, sur " + nSalons + " éditions"],
+      [String(CHAMPS_COMPLETUDE.length), "champs mesurés par la complétude"],
+      ["3", "clés de rapprochement des doublons"],
+      [String(nDoublons), "doublons détectés au carnet"]
+    ],
+    aller: "manager|carnet|",
+    bouton: "Ouvrir le carnet",
+    pas: "BinchamCard ne va chercher aucune donnée à l’extérieur : ni registre du commerce, " +
+         "ni annuaire, ni signature d’e-mail. Il mesure ce que le stand a capté, il ne le " +
+         "complète pas. Et les doublons sont comptés, pas encore fusionnés."
   }
-];
+  ];
+}
 
-/** Ce que le produit fait et que le concurrent ne fait pas. */
-const ECARTS = [
-  ["scan", "La capture nue vaut zéro",
-   "Payer le scan fabrique du scan, et pollue la base que le CRM doit recevoir. Seule la " +
-   "qualification produit de la valeur — et la formule est publique, affichée, réglable."],
-  ["layers", "Capture et qualification découplées",
-   "Le contact est acquis dès l’écriture locale, sans attendre le réseau. Le tri se fait plus tard, " +
-   "au calme, depuis La Pile. Un hall de salon n’a pas de réseau et un stand saturé n’a pas de temps."],
-  ["sliders", "Tout se règle sans nous",
-   "Le formulaire de qualification et les pondérations du scoring se modifient dans l’application, " +
-   "avec effet immédiat sur les leads existants. Aucun devis, aucun délai."],
-  ["table", "La borne, et son consentement",
-   "Le visiteur saisit lui-même ses coordonnées : pas de photo, pas d’extraction, pas d’erreur de " +
-   "lecture. Réarmage automatique entre deux visiteurs, et consentement donné de sa main."],
-  ["book", "Un carnet, pas des silos",
-   "Un lead appartient à un salon ; un contact appartient à l’entreprise. Le carnet traverse les " +
-   "salons, tous modes de capture confondus, et détecte ses propres doublons."],
-  ["users", "Le pilotage dans le même produit",
-   "Capture, qualification, carte, scoring, équipe et export vivent dans un seul parcours. " +
-   "Pas quatre produits et deux prestations à comprendre avant de savoir ce qu’on achète."]
-];
-
-
-/** Les trois visions du produit. C'est la premiere chose qu'un partenaire
- *  doit comprendre : qui utilise quoi, et pour repondre a quelle question. */
-const VISIONS = [
+/** Les trois rôles. Manipulables en direct depuis la barre du haut. */
+const ROLES = [
   {
     role: "Commercial",
-    ou: "Debout sur le stand, une seule main libre",
-    question: "Qu'est-ce que je fais du contact que je viens de rencontrer ?",
-    ecrans: ["Mon salon", "Capture Éclair", "La Pile", "Fiche de qualification",
-             "Le Dévoilement", "Ma carte numérique", "Mode kiosque", "Synchronisation"],
-    fait: "Il photographie une carte en huit secondes sans attendre le réseau, la laisse dans " +
-          "La Pile, et la qualifie pendant un creux. Le score se révèle, s'arrête sur le seuil, " +
-          "et lui nomme le geste le moins cher pour faire basculer le lead.",
+    ou: "Debout sur le stand, une main libre",
+    question: "Qu’est-ce que je fais du contact que je viens de rencontrer ?",
+    ecrans: ["Mon salon", "Capturer", "La Pile", "Fiche de qualification",
+             "Le Dévoilement", "Ma carte", "Mode kiosque", "Synchro"],
     aller: "terrain|terrain|"
   },
   {
     role: "Manager",
     ou: "Assis, pendant et après le salon",
-    question: "Qu'est-ce que mon équipe ramène vraiment, et combien ça vaut ?",
+    question: "Qu’est-ce que mon équipe ramène, et ce salon nous a coûté combien par lead ?",
     ecrans: ["Tableau de bord", "Le carnet", "Par salon", "Leads", "Équipe", "Export CRM", "Relances"],
-    fait: "Il voit les leads qualifiés arriver en direct, la contribution de chacun, et il compare " +
-          "les quatre éditions sur leur coût par lead qualifié — le seul chiffre qui permet " +
-          "d'arbitrer un budget salon devant un comité de direction. Puis il pousse au CRM.",
     aller: "manager|dashboard|"
   },
   {
     role: "Admin",
     ou: "Avant le salon, sans nous appeler",
-    question: "Comment j'adapte l'outil à mon métier ?",
-    ecrans: ["Formulaire de qualification", "Scoring", "Connecteurs", "Conformité"],
-    fait: "Il construit son formulaire salon, règle les pondérations du scoring et voit les leads " +
-          "existants se recalculer devant lui, choisit son CRM et vérifie ses obligations. " +
-          "Sans devis, sans délai, sans prestation facturée.",
-    aller: "admin|scoring|"
+    question: "Comment j’adapte l’outil à mon métier ?",
+    ecrans: ["Formulaire", "Scoring", "Connecteurs", "Conformité"],
+    aller: "admin|builder|"
   }
 ];
 
 function vueAccueil(){
-  const L = S.leads;
-  const chauds = L.filter(function(l){ return l.statut === "Chaud"; }).length;
-  const pays = uniq(L.map(function(l){ return l.pays; })).length;
-  const carnet = (typeof carnetComplet === "function") ? carnetComplet().length : L.length;
-  const qualifies = L.filter(qualifie).length;
+  const SOL = solutions();
+  const carnet = carnetComplet();
+  const qualifies = S.leads.filter(qualifie).length;
+  const nCRM = Object.keys(CRM).length;
+  const coutTotal = Object.keys(SEED.budgets || {}).reduce(function(s, k){
+    return s + SEED.budgets[k].total; }, 0);
 
   return '' +
   '<div class="hero">' +
     '<p class="eyebrow">Capture et qualification de leads en salon</p>' +
-    '<h1>Le scanner est le péage d’entrée, pas la promesse.</h1>' +
-    '<p class="lead">Nos concurrents numérisent la carte. BinchamCard décide quoi en faire : ' +
-      'chaque lead sort avec une valeur affichée, un propriétaire et une échéance — et chaque salon ' +
-      'avec un coût par lead qualifié défendable en comité de direction.</p>' +
+    '<h1>Trois solutions, un seul parcours du stand au CRM.</h1>' +
+    '<p class="lead">La carte de visite se photographie et se trie. Le rapport de visite se ' +
+      'configure avant le salon et se remplit debout. Le carnet mesure ce qu’il a capté. ' +
+      'Tout est manipulable ci-dessous, en direct.</p>' +
     '<div class="ctas">' +
       '<button type="button" class="btn btn-primary" data-go="terrain|terrain|pile">' +
-        'Voir le Dévoilement' + ic("right",15) + '</button>' +
-      '<button type="button" class="link" data-go="manager|dashboard|">Voir le pilotage ' +
+        'Qualifier un lead' + ic("right",15) + '</button>' +
+      '<button type="button" class="link" data-go="manager|salons|">Voir le coût par lead ' +
         '<span aria-hidden="true">→</span></button>' +
     '</div>' +
     '<div class="herostats">' +
-      '<div><b class="num">' + qualifies + '</b><span>leads qualifiés sur ' + L.length +
-        ' contacts enregistrés</span></div>' +
-      '<div><b class="num">' + carnet + '</b><span>contacts au carnet, sur quatre salons</span></div>' +
-      '<div><b class="num">' + chauds + '</b><span>leads chauds, sur ' + pays + ' pays</span></div>' +
-      '<div><b class="num">6</b><span>CRM avec un mapping réel et testable</span></div>' +
+      '<div><b class="num">' + qualifies + '</b><span>leads qualifiés sur ' + S.leads.length +
+        ' contacts, salon en cours</span></div>' +
+      '<div><b class="num">' + carnet.length + '</b><span>contacts au carnet, sur quatre éditions</span></div>' +
+      '<div><b class="num">' + nf.format(coutTotal) + '&#8239;€</b><span>de budget salon, ramené au lead qualifié</span></div>' +
+      '<div><b class="num">' + nCRM + '</b><span>CRM au mapping publié, champ par champ</span></div>' +
     '</div>' +
   '</div>' +
 
   '<div class="page" style="padding-top:0">' +
 
-    /* ---- les trois visions : la premiere chose a comprendre ---- */
-    '<div class="cote"><span class="cote__val">01&nbsp;&nbsp;Trois visions, un seul produit</span></div>' +
-    '<p class="lead" style="max-width:64ch;margin-bottom:32px">Un seul parcours relie le stand au ' +
-      'comité de direction. Chaque vision est manipulable en direct ci-dessous.</p>' +
+    /* ---- les trois solutions ---- */
+    '<div class="cote"><span class="cote__val">01&nbsp;&nbsp;Les trois solutions</span></div>' +
+    '<p class="lead" style="max-width:64ch;margin-bottom:32px">Ce que chacune fait, geste par ' +
+      'geste. Les chiffres sont lus dans l’application au moment où cette page s’affiche.</p>' +
+
+    SOL.map(function(s){
+      return '<section class="chart" style="margin-bottom:20px">' +
+        '<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">' +
+          '<span class="eyebrow" style="color:var(--verm-e)">' + s.n + '</span>' +
+          '<h3 style="font-size:22px">' + esc(s.titre) + '</h3>' +
+        '</div>' +
+        '<p class="hint" style="margin-top:8px;max-width:70ch">' + esc(s.quoi) + '</p>' +
+
+        '<div class="body" style="margin-top:20px">' +
+          '<div class="rail">' +
+            s.etapes.map(function(e, i){
+              return '<div class="step on"><div class="n num">' + (i+1) + '</div><div>' +
+                '<h4>' + esc(e[0]) + '</h4><p>' + esc(e[1]) + '</p></div></div>';
+            }).join("") +
+          '</div>' +
+
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));' +
+            'gap:0;margin-top:24px;border-top:1px solid var(--joint)">' +
+            s.chiffres.map(function(c, i){
+              return '<div style="padding:16px 20px 16px ' + (i ? "20px" : "0") + ';' +
+                (i ? "border-left:1px solid var(--joint)" : "") + '">' +
+                '<b class="num" style="display:block;font-size:26px;line-height:1">' + esc(c[0]) + '</b>' +
+                '<span style="display:block;margin-top:8px;font:400 12px/1.4 var(--f-ui);' +
+                  'color:var(--encre2)">' + esc(c[1]) + '</span></div>';
+            }).join("") +
+          '</div>' +
+
+          '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:20px">' +
+            '<button type="button" class="btn btn-primary btn-sm" data-go="' + esc(s.aller) + '">' +
+              esc(s.bouton) + '</button>' +
+            '<span class="estampille">l’écran qui le prouve</span>' +
+          '</div>' +
+
+          '<p style="margin-top:20px;padding-left:14px;border-left:1px solid var(--arete);' +
+            'font:400 13px/1.5 var(--f-ui);color:var(--encre2);max-width:72ch">' +
+            '<b style="font-weight:600;color:var(--encre)">Ce que ça ne fait pas.</b> ' +
+            esc(s.pas) + '</p>' +
+        '</div>' +
+      '</section>';
+    }).join("") +
+
+    /* ---- les trois rôles ---- */
+    '<div class="cote"><span class="cote__val">02&nbsp;&nbsp;Trois rôles, une seule base</span></div>' +
+    '<p class="lead" style="max-width:64ch;margin-bottom:32px">Le sélecteur en haut à droite ' +
+      'change de rôle sans rien recharger. Les trois voient les mêmes leads, pas les mêmes écrans.</p>' +
 
     '<div class="chartgrid g-auto">' +
-      VISIONS.map(function(v){
+      ROLES.map(function(v){
         return '<section class="chart">' +
           '<div class="eyebrow" style="color:var(--verm-e)">' + esc(v.role) + '</div>' +
           '<h3 style="margin-top:8px">' + esc(v.question) + '</h3>' +
-          '<p class="hint" style="margin-top:6px;color:var(--ink-3)">' + esc(v.ou) + '</p>' +
+          '<p class="hint" style="margin-top:6px">' + esc(v.ou) + '</p>' +
           '<div class="body">' +
-            '<p style="font-size:14px;line-height:1.55;color:var(--ink-2)">' + esc(v.fait) + '</p>' +
-            '<div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px">' +
+            '<div style="display:flex;flex-wrap:wrap;gap:6px">' +
               v.ecrans.map(function(e){ return '<span class="tag t-neutral">' + esc(e) + '</span>'; }).join("") +
             '</div>' +
-            '<button type="button" class="btn btn-primary btn-sm" data-go="' + esc(v.aller) + '" style="margin-top:20px">' +
-              'Ouvrir la vision ' + esc(v.role) + '</button>' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-go="' + esc(v.aller) + '" ' +
+              'style="margin-top:20px">Passer en ' + esc(v.role) + '</button>' +
           '</div>' +
         '</section>';
       }).join("") +
     '</div>' +
 
-    /* ---- les trois preuves ---- */
-    '<div class="cote"><span class="cote__val">02&nbsp;&nbsp;Trois preuves, trois minutes</span></div>' +
-    '<p class="lead" style="max-width:64ch;margin-bottom:32px">Chaque bouton ouvre l’écran ' +
-      'qui démontre l’argument. Rien n’est raconté sans être montré.</p>' +
-
-    '<div class="chartgrid g-auto">' +
-      PREUVES.map(function(p){
-        return '<section class="chart">' +
-          '<div class="eyebrow" style="color:var(--verm-e)">Preuve ' + p.n + '</div>' +
-          '<h3 style="margin-top:8px">' + esc(p.titre) + '</h3>' +
-          '<p class="hint" style="margin-top:10px">' + esc(p.dit) + '</p>' +
-          '<div class="body" style="margin-top:16px">' +
-            '<p style="font-size:13px;color:var(--ink-3);line-height:1.5;border-left:1px solid var(--line-2);padding-left:12px">' +
-              esc(p.contre) + '</p>' +
-            '<button type="button" class="btn btn-ghost btn-sm" data-go="' + esc(p.aller) + '" style="margin-top:16px">' +
-              esc(p.ou.split(" → ")[0] === "Terrain" ? "Ouvrir le terrain" : "Ouvrir l’export CRM") + '</button>' +
-          '</div>' +
-        '</section>';
-      }).join("") +
-    '</div>' +
-
-    /* ---- les écarts ---- */
-    '<div class="cote"><span class="cote__val">03&nbsp;&nbsp;Ce que nous faisons et qu’ils ne font pas</span></div>' +
-    '<div class="chartgrid g-auto">' +
-      ECARTS.map(function(e){
-        return '<section class="chart">' +
-          '<h3>' + esc(e[1]) + '</h3>' +
-          '<p class="hint" style="margin-top:10px">' + esc(e[2]) + '</p>' +
-        '</section>';
-      }).join("") +
-    '</div>' +
-
-    /* ---- l'honnêteté sur la démonstration ---- */
-    '<div class="cote"><span class="cote__val">04&nbsp;&nbsp;Ce que cette démonstration est</span></div>' +
-    '<div class="chartgrid">' +
+    /* ---- ce que cette démonstration est, et n'est pas ---- */
+    '<div class="cote"><span class="cote__val">03&nbsp;&nbsp;Ce que cette démonstration est</span></div>' +
+    '<div class="chartgrid g-2">' +
       '<section class="chart">' +
-        '<h3>Un prototype, et il le dit</h3>' +
+        '<h3>Tout est manipulable, rien ne sort de votre appareil</h3>' +
         '<p class="hint" style="margin-top:10px">' +
-          'Toutes les vues sont manipulables. Les données sont un jeu de démonstration — ' +
-          'salon ' + esc(SEED.salon.nom) + ', ' + SEED.leads.length + ' leads, ' +
-          SEED.commerciaux.length + ' commerciaux, ' + carnet + ' contacts au carnet — stocké ' +
-          'dans votre navigateur. Vos modifications ne sont visibles que par vous et ne quittent ' +
-          'pas votre appareil.' +
-        '</p>' +
-        '<p class="hint" style="margin-top:12px">' +
-          'La reconnaissance de texte est scriptée sur des cartes d’exemple : elle tourne côté ' +
-          'serveur dans le produit réel. Nous préférons le dire plutôt que d’afficher un taux ' +
-          'de lecture invérifiable.' +
+          'Les données sont un jeu de démonstration — salon ' + esc(SEED.salon.nom) + ', ' +
+          S.leads.length + ' leads, ' + SEED.commerciaux.length + ' commerciaux, ' +
+          carnet.length + ' contacts au carnet — conservé dans votre navigateur. Vos ' +
+          'modifications ne sont visibles que par vous et ne quittent pas votre appareil.' +
         '</p>' +
         '<div class="body" style="margin-top:16px">' +
-          '<button type="button" class="btn btn-ghost btn-sm" id="btn-reset">Réinitialiser la démonstration</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" id="btn-reset">' +
+            'Réinitialiser la démonstration</button>' +
+        '</div>' +
+      '</section>' +
+      '<section class="chart">' +
+        '<h3>Ce qui est simulé, dit une fois pour toutes</h3>' +
+        '<div class="body" style="margin-top:10px">' +
+          '<ul style="margin:0;padding-left:18px;font:400 13px/1.6 var(--f-ui);color:var(--encre2)">' +
+            '<li>La lecture de carte rejoue cinq cartes d’exemple. Aucune reconnaissance ' +
+              'de texte ne tourne ici.</li>' +
+            '<li>Le mapping des ' + nCRM + ' CRM porte les vrais noms d’API et les champs que ' +
+              'l’API refuse à vide, mais aucun appel n’est émis.</li>' +
+            '<li>La bascule hors ligne change l’affichage ; il n’y a pas de file de reprise ' +
+              'derrière.</li>' +
+            '<li>Les doublons sont comptés, sans écran pour les fusionner.</li>' +
+          '</ul>' +
+          '<p class="hint" style="margin-top:14px">Nous préférons l’écrire plutôt que ' +
+            'd’afficher un taux de lecture que vous ne pourriez pas vérifier.</p>' +
         '</div>' +
       '</section>' +
     '</div>' +
@@ -8479,7 +8556,12 @@ const CRM = {
       { src:"fonction",api:"jobtitle",         type:"string",      requis:false },
       { src:"tel",     api:"phone",            type:"string",      requis:false },
       { src:"pays",    api:"country",          type:"string",      requis:false },
-      { src:"origine", api:"hs_lead_status",   type:"enumeration", requis:false },
+      /* hs_lead_status porte l ETAT du lead, pas son origine. Les deux y
+         ecrivaient : la seconde ecriture ecrasait la premiere et l origine
+         etait perdue. HubSpot n a pas de propriete de source inscriptible
+         cote contact (hs_analytics_source est en lecture seule), d ou une
+         propriete personnalisee. */
+      { src:"origine", api:"lead_source",     type:"enumeration (perso.)", requis:false },
       { src:"statut",  api:"hs_lead_status",   type:"enumeration", requis:false },
       { src:"niveau",  api:"inquiry_level",    type:"enumeration (perso.)", requis:false },
       { src:"machine", api:"machine_interest", type:"string (perso.)",      requis:false },
@@ -8615,7 +8697,9 @@ function vueCRM(){
   return '<div class="page">' +
     '<div class="pagehead"><p class="eyebrow">Intégration</p><h1>Export CRM</h1>' +
       '<p>Le mapping est fourni par défaut pour chaque CRM et reste modifiable champ par champ. ' +
-      'Aucun lead ne part sans avoir été recherché au préalable dans le CRM cible.</p></div>' +
+      'Les règles de rapprochement ci-dessous sont la spécification du connecteur ; ' +
+      'dans cette démonstration, « pousser » marque la fiche comme transmise sans ' +
+      'appeler le CRM.</p></div>' +
 
     '<div class="kpigrid" style="margin-bottom:18px">' +
       kpi("En attente d’envoi", enAttente.length, "prêts à être poussés", null) +
@@ -9349,10 +9433,25 @@ document.addEventListener("click", function(ev){
   if ((el = near("[data-me]"))) { S.me = el.dataset.me; sauver(); rendreEnGardantLeFocus(); return; }
   if (near("#btn-export-vcard")) {
     const moi = byId(SEED.commerciaux, S.me);
-    telecharger("carte-" + S.me + ".txt",
-      "BEGIN:VCARD\r\nVERSION:3.0\r\nN:" + moi.nom.split(" ")[1] + ";" + moi.nom.split(" ")[0] +
-      "\r\nFN:" + moi.nom + "\r\nORG:Bincham Industries\r\nTITLE:" + moi.role +
-      "\r\nURL:" + QRDATA[S.me].url + "\r\nEND:VCARD\r\n");
+    /* .vcf, et non .txt : un fichier nomme .txt n est pas propose a l import
+       par le carnet d adresses. L e-mail et le telephone sont les deux champs
+       pour lesquels on echange une carte : les omettre rendait le fichier
+       inutile. Les lignes sont jointes par un CR LF construit a l execution. */
+    const FL = String.fromCharCode(13, 10);
+    const mail = moi.nom.toLowerCase().split(" ").join(".")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") + "@bincham.com";
+    telecharger("carte-" + S.me + ".vcf", [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      "N:" + moi.nom.split(" ")[1] + ";" + moi.nom.split(" ")[0],
+      "FN:" + moi.nom,
+      "ORG:Bincham Industries",
+      "TITLE:" + moi.role,
+      "EMAIL;TYPE=WORK:" + mail,
+      "TEL;TYPE=WORK,VOICE:+33 1 84 80 12 40",
+      "URL:" + QRDATA[S.me].url,
+      "END:VCARD", ""
+    ].join(FL));
     return;
   }
 
