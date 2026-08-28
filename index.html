@@ -583,6 +583,21 @@ tbody tr:last-child td{border-bottom:0}
 .champapi:hover{box-shadow:inset 0 0 0 1px var(--arete)}
 .champapi:focus{outline:0;box-shadow:inset 0 0 0 1px var(--encre);background:var(--blanc)}
 .champapi:disabled{background:var(--creux);color:var(--encre3c)}
+.posterow{
+  display:grid;grid-template-columns:150px 1fr 88px;align-items:center;gap:14px;
+  padding:9px 0;border-bottom:1px solid var(--joint)
+}
+.posterow:last-of-type{border-bottom:0}
+.posterow label{font:500 13px/1.3 var(--f-ui);color:var(--encre2)}
+.posterow .vv{font:400 14px/1 var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:640px){ .posterow{grid-template-columns:110px 1fr 76px;gap:10px} }
+.jalon{padding:14px 0;border-bottom:1px solid var(--joint)}
+.jalon:last-of-type{border-bottom:0}
+.jalon.coupe{opacity:.55}
+.jalon__tete{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.jalon__tete b{font:600 14px/1.3 var(--f-ui);letter-spacing:-.008em}
+.jalon__quoi{font:400 12.5px/1.5 var(--f-ui);color:var(--encre2);margin:6px 0 10px}
+.jalon__n{font:400 11px/1.4 var(--f-mono);color:var(--encre3c);margin-top:8px}
 </style>
 <style>
 /* ============================================================
@@ -8935,6 +8950,41 @@ function vueCarnet(){
      salon ancien, et l'écran le dit au lieu de laisser croire à un échec.
    ============================================================ */
 
+/* ============================================================
+   Le budget est REGLABLE. C'est la seule facon de repondre a la question
+   que pose vraiment un comite de direction : « si on prend un stand deux
+   fois plus petit l'annee prochaine, ca donne quoi ? » Un tableau qu'on
+   ne peut pas interroger ne se discute pas, il se subit.
+
+   Les retouches vivent dans S.budgets et ne touchent jamais SEED : on
+   revient a la valeur reelle d'un clic.
+   ============================================================ */
+const POSTES = [
+  ["stand",       "Stand"],
+  ["amenagement", "Aménagement"],
+  ["personnel",   "Personnel"],
+  ["voyage",      "Voyage et hébergement"],
+  ["marketing",   "Marketing et impression"]
+];
+
+function budgetEffectif(id){
+  const base = (SEED.budgets || {})[id];
+  if (!base) return base;
+  const perso = (S.budgets && S.budgets[id]) || {};
+  const b = {};
+  Object.keys(base).forEach(function(k){ b[k] = base[k]; });
+  Object.keys(perso).forEach(function(k){ b[k] = perso[k]; });
+  b.total = POSTES.reduce(function(t, p){ return t + (b[p[0]] || 0); }, 0);
+  b.retouche = Object.keys(perso).length > 0;
+  return b;
+}
+function retoucherBudget(id, poste, valeur){
+  if (!S.budgets) S.budgets = {};
+  if (!S.budgets[id]) S.budgets[id] = {};
+  S.budgets[id][poste] = Math.max(0, Math.round(valeur));
+}
+function reinitialiserBudget(id){ if (S.budgets) delete S.budgets[id]; }
+
 /** Tous les contacts d'une édition, salon en cours comme historique. */
 function contactsDuSalon(id){
   if (id === "wire26") {
@@ -8958,7 +9008,7 @@ function contactsDuSalon(id){
 
 /** Le bilan chiffré d'une édition. */
 function bilanSalon(id){
-  const b = (SEED.budgets || {})[id];
+  const b = budgetEffectif(id);
   const c = contactsDuSalon(id);
   /* Une seule definition par colonne. Les editions closes ne portent ni
      les quatre criteres ni le score : la seule condition verifiable
@@ -9066,22 +9116,40 @@ function vueSalons(){
     '<div class="chartgrid g-2">' +
       '<section class="chart">' +
         '<h3>Décomposition du budget · ' + esc(encours ? encours.nom : "") + '</h3>' +
-        '<p class="hint">Ce que coûte réellement une présence, poste par poste.</p>' +
-        '<div class="body"><div class="bars">' +
+        '<p class="hint">Déplacez un poste : le coût par lead qualifié se recalcule ' +
+          'sous vos yeux. C’est l’arbitrage que vous refaites chaque année.</p>' +
+        '<div class="body">' +
           (encours && encours.budget
-            ? [["Stand", encours.budget.stand], ["Aménagement", encours.budget.amenagement],
-               ["Personnel", encours.budget.personnel], ["Voyage et hébergement", encours.budget.voyage],
-               ["Marketing et impression", encours.budget.marketing]]
-              .sort(function(a,b){ return b[1] - a[1]; })
-              .map(function(x){
-                return '<div class="barrow">' +
-                  '<span class="lb">' + esc(x[0]) + '</span>' +
-                  '<span class="bartrack"><i class="barfill" style="width:' +
-                    (x[1] / encours.budget.stand * 100).toFixed(0) + '%"></i></span>' +
-                  '<span class="vv num">' + Math.round(x[1] / 1000) + 'k</span></div>';
-              }).join("")
+            ? POSTES.map(function(x){
+                const v = encours.budget[x[0]] || 0;
+                return '<div class="posterow">' +
+                  '<label for="poste-' + x[0] + '">' + esc(x[1]) + '</label>' +
+                  '<input type="range" id="poste-' + x[0] + '" data-poste="' + x[0] + '" ' +
+                    'min="0" max="60000" step="500" value="' + v + '" ' +
+                    'aria-label="' + esc(x[1]) + ', en euros">' +
+                  '<span class="num vv">' + nf.format(v) + '&#8239;€</span></div>';
+              }).join("") +
+              '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;' +
+                'flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--joint)">' +
+                '<span class="eyebrow">Total de l’édition</span>' +
+                '<b class="num" style="font-size:24px">' + nf.format(encours.budget.total) + '&#8239;€</b>' +
+              '</div>' +
+              '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;' +
+                'flex-wrap:wrap;margin-top:10px">' +
+                '<span class="eyebrow">Coût par lead qualifié</span>' +
+                '<b class="num" style="font-size:32px;color:var(--verm-e)">' +
+                  nf.format(encours.cplq) + '&#8239;€</b>' +
+              '</div>' +
+              '<p style="font:400 12px/1.5 var(--f-mono);color:var(--encre3c);margin-top:10px">' +
+                nf.format(encours.budget.total) + ' € ÷ ' + encours.qualifies +
+                ' fiches exploitables' + '</p>' +
+              (encours.budget.retouche
+                ? '<button type="button" class="btn btn-ghost btn-sm bc-appui" ' +
+                  'data-budget-reset="' + esc(encours.id) + '" style="margin-top:14px">' +
+                  'Revenir au budget réel</button>'
+                : '<p class="estampille" style="display:block;margin-top:14px">budget réel de l’édition</p>')
             : "") +
-        '</div></div>' +
+        '</div>' +
       '</section>' +
       '<section class="chart">' +
         '<h3>Ce que le comité de direction retient</h3>' +
@@ -9248,7 +9316,8 @@ function kCoordonnees(){
     '<label class="kconsent">' +
       '<input type="checkbox" data-kf="consent"' + (v.consent ? " checked" : "") + '>' +
       '<span>J’accepte d’être recontacté par Bincham Industries au sujet de ma demande. ' +
-        'Mes données sont conservées 24 mois et je peux demander leur suppression à tout moment.</span>' +
+        'Mes données sont conservées ' + dureeConservation() + ' mois et je peux demander leur ' +
+          'suppression à tout moment.</span>' +
     '</label>' +
     (S.kiosque.optin
       ? '<label class="kconsent">' +
@@ -9684,32 +9753,100 @@ function regle(n, t, d){
 /* ============================================================
    Vue : relances post-salon
    ============================================================ */
+/* ============================================================
+   Les rappels. L'écran décrivait une séquence figée : quatre jalons
+   écrits en dur, aucun levier. Or le délai de rappel est justement la
+   variable que chaque entreprise règle à sa main — deux jours chez un
+   fabricant qui vend sur devis, trois semaines chez un distributeur.
+
+   Chaque étape porte donc son délai et son interrupteur, et le nombre de
+   contacts concernés suit immédiatement.
+   ============================================================ */
+const JALONS = [
+  { cle:"accuse",  nom:"Accusé de rencontre",
+    quoi:"Envoyé le soir même, signé du commercial qui a rencontré le contact, avec sa carte numérique.",
+    qui:function(l){ return l.statut === "Chaud" || l.statut === "Tiède"; } },
+  { cle:"reponse", nom:"Réponse à la demande",
+    quoi:"Un devis pour ceux à qui on en a promis un, de la documentation pour les autres. Le contenu dépend de ce que le commercial a coché sur le stand.",
+    qui:function(l){ return l.suivi === "Devis sous 48 h" || l.suivi === "Envoi documentation"; } },
+  { cle:"appel",   nom:"Appel du commercial",
+    quoi:"Une tâche dans le CRM, pas un e-mail automatique. Un contact chaud mérite qu’on décroche.",
+    qui:function(l){ return l.statut === "Chaud"; } },
+  { cle:"reprise", nom:"Reprise de contact",
+    quoi:"Pour les contacts tièdes qui n’ont pas bougé. Les froids partent en communication marketing.",
+    qui:function(l){ return l.statut === "Tiède" && !l.crm; } }
+];
+const SEQUENCE_DEFAUT = { accuse:{j:0,on:true}, reponse:{j:2,on:true}, appel:{j:7,on:true}, reprise:{j:30,on:true} };
+
+function sequenceEffective(){
+  const s = {};
+  Object.keys(SEQUENCE_DEFAUT).forEach(function(k){
+    const d = SEQUENCE_DEFAUT[k], p = (S.sequence || {})[k] || {};
+    s[k] = { j: p.j != null ? p.j : d.j, on: p.on != null ? p.on : d.on };
+  });
+  return s;
+}
+function reglerJalon(cle, champ, valeur){
+  if (!S.sequence) S.sequence = {};
+  if (!S.sequence[cle]) S.sequence[cle] = {};
+  S.sequence[cle][champ] = valeur;
+}
+
 function vueRelances(){
   const parSuivi = grouper(S.leads, "suivi");
-  const chauds = S.leads.filter(function(l){ return l.statut === "Chaud"; });
-  const seq = [
-    ["J+0", "Accusé de rencontre", "Envoyé automatiquement le soir même, signé du commercial qui a capturé le contact, avec sa carte numérique en pièce jointe.", chauds.length + S.leads.filter(function(l){ return l.statut === "Tiède"; }).length],
-    ["J+2", "Réponse à la demande", "Devis pour les « Devis sous 48 h », documentation pour les autres. Le contenu dépend de l’action de suivi choisie sur le stand.", S.leads.filter(function(l){ return l.suivi === "Devis sous 48 h" || l.suivi === "Envoi documentation"; }).length],
-    ["J+7", "Relance du commercial", "Tâche créée dans le CRM, pas un e-mail automatique. Un lead chaud mérite un appel.", chauds.length],
-    ["J+30", "Reprise de contact", "Uniquement pour les leads tièdes non transformés. Les froids basculent en nurturing marketing.", S.leads.filter(function(l){ return l.statut === "Tiède" && !l.crm; }).length]
-  ];
+  const seq = sequenceEffective();
+  const actifs = JALONS.filter(function(j){ return seq[j.cle].on; });
+  const touches = uniq(actifs.reduce(function(a, j){
+    return a.concat(S.leads.filter(j.qui).map(function(l){ return l.id; }));
+  }, [])).length;
+  const dernier = actifs.length ? Math.max.apply(null, actifs.map(function(j){ return seq[j.cle].j; })) : 0;
+  const retouche = !!(S.sequence && Object.keys(S.sequence).length);
 
   return '<div class="page">' +
-    '<div class="pagehead"><p class="eyebrow">Après le salon</p><h1>Relances</h1>' +
-      '<p>Le salon ne crée pas de valeur, la relance si. La séquence est déclenchée par l’action de suivi ' +
-      'choisie sur le stand, pas par un envoi de masse indifférencié.</p></div>' +
+    '<div class="pagehead"><p class="eyebrow">Après le salon</p><h1>Les rappels</h1>' +
+      '<p>Le salon ne rapporte rien, le rappel si. Réglez le délai de chaque étape et coupez ' +
+      'celles qui ne vous concernent pas : le nombre de contacts touchés suit immédiatement.</p></div>' +
+
+    '<div class="kpigrid" style="margin-bottom:18px">' +
+      kpi("Étapes actives", actifs.length + " sur " + JALONS.length, "coupez ce qui ne sert pas", null) +
+      kpi("Contacts touchés", touches, pct(touches, S.leads.length) + " du salon", null) +
+      kpi("Séquence terminée", "J+" + dernier, "après la fin du salon", null) +
+      kpi("Sans e-mail utilisable",
+          S.leads.filter(function(l){ return !emailExploitable(l); }).length,
+          "aucun rappel ne peut partir", null) +
+    '</div>' +
 
     '<div class="chartgrid g-2">' +
-      '<section class="chart"><h3>Séquence déclenchée</h3>' +
+      '<section class="chart"><h3>La séquence</h3>' +
         '<p class="hint">Délais comptés à partir de la fin du salon.</p>' +
-        '<div class="body" style="display:flex;flex-direction:column;gap:14px">' +
-          seq.map(function(s){
-            return '<div style="display:flex;gap:12px">' +
-              '<span class="tag t-neutral num" style="flex:none;min-width:44px;justify-content:center">' + esc(s[0]) + '</span>' +
-              '<div style="flex:1"><b style="font-size:13.5px">' + esc(s[1]) + '</b>' +
-                '<p style="font-size:12.5px;color:var(--ink-2);margin-top:3px;line-height:1.55">' + esc(s[2]) + '</p></div>' +
-              '<span class="num" style="flex:none;font-weight:600;color:var(--ink-3)">' + s[3] + '</span></div>';
+        '<div class="body">' +
+          JALONS.map(function(j){
+            const e = seq[j.cle];
+            const n = S.leads.filter(j.qui).length;
+            return '<div class="jalon' + (e.on ? "" : " coupe") + '">' +
+              '<div class="jalon__tete">' +
+                '<b>' + esc(j.nom) + '</b>' +
+                '<button type="button" class="btn btn-ghost btn-sm bc-appui" data-jalon-on="' +
+                  j.cle + '" aria-pressed="' + (e.on ? "true" : "false") + '">' +
+                  (e.on ? "Active" : "Coupée") + '</button>' +
+              '</div>' +
+              '<p class="jalon__quoi">' + esc(j.quoi) + '</p>' +
+              '<div class="posterow" style="border-bottom:0;padding-bottom:0">' +
+                '<label for="j-' + j.cle + '">Délai</label>' +
+                '<input type="range" id="j-' + j.cle + '" data-jalon-j="' + j.cle + '" ' +
+                  'min="0" max="60" step="1" value="' + e.j + '"' + (e.on ? "" : " disabled") +
+                  ' aria-label="Délai de l’étape ' + esc(j.nom) + ', en jours">' +
+                '<span class="vv num">J+' + e.j + '</span>' +
+              '</div>' +
+              '<p class="jalon__n">' + (e.on
+                ? n + ' contact' + (n > 1 ? 's' : '') + ' concerné' + (n > 1 ? 's' : '')
+                : 'étape coupée : personne n’est rappelé ici') + '</p>' +
+            '</div>';
           }).join("") +
+          (retouche
+            ? '<button type="button" class="btn btn-ghost btn-sm bc-appui" data-seq-reset="1" ' +
+              'style="margin-top:14px">Revenir à la séquence par défaut</button>'
+            : '<p class="estampille" style="display:block;margin-top:14px">séquence par défaut</p>') +
         '</div></section>' +
       barChart("Charge de travail par nature d’action", "Ce que l’équipe doit produire en rentrant.", parSuivi, "var(--warm)") +
     '</div>' +
@@ -9717,9 +9854,9 @@ function vueRelances(){
     '<div class="card card-p" style="margin-top:14px;display:flex;gap:11px;align-items:flex-start">' +
       '<span style="color:var(--verm-e);flex:none;margin-top:1px">' + ic("clock",17) + '</span>' +
       '<p style="font-size:13px;color:var(--ink-2);line-height:1.6;max-width:82ch">' +
-        '<b style="color:var(--ink)">Engagement de service interne.</b> Première relance sous trois jours ouvrés. ' +
-        'Au-delà, le lead remonte automatiquement au responsable de zone : c’est le seul mécanisme d’escalade, ' +
-        'et il porte sur le délai, jamais sur le résultat.</p></div>' +
+        '<b style="color:var(--ink)">Un engagement, pas un objectif.</b> Passé le délai de la ' +
+        'première étape, le contact remonte au responsable de zone. On ne reproche pas à un ' +
+        'commercial de ne pas avoir signé, on lui reproche de ne pas avoir répondu.</p></div>' +
   '</div>';
 }
 
@@ -9836,34 +9973,131 @@ function vueConnecteurs(){
   '</div>';
 }
 
+/* ============================================================
+   Le cadre légal. L'écran était un tableau de dix intentions, toutes
+   marquées « mise en œuvre » par nous — c'est-à-dire une auto-évaluation
+   que le client ne pouvait ni contester ni suivre.
+
+   Il devient un registre qu'il tient LUI : chaque exigence porte l'état
+   qu'il lui donne, et la durée de conservation qu'il fixe ici est celle
+   que le visiteur lit sur la tablette du comptoir. Un réglage de
+   conformité qui ne change rien ailleurs n'est pas un réglage.
+   ============================================================ */
+const EXIGENCES = [
+  ["info",     "Information de la personne",
+   "Un écran d’information s’affiche au moment de la prise de vue, en une phrase. Il n’ajoute pas d’étape."],
+  ["base",     "Base légale",
+   "Intérêt légitime pour la prospection entre professionnels, accord explicite pour la communication marketing. Les deux sont enregistrés séparément."],
+  ["preuve",   "Preuve de l’accord",
+   "Date et heure, salon, commercial, version du texte affiché. Conservée aussi longtemps que la donnée."],
+  ["duree",    "Durée de conservation",
+   "Réglée ci-dessous. Effacement automatique à l’échéance, alerte trente jours avant."],
+  ["droits",   "Droits des personnes",
+   "Accès, correction, effacement et opposition traités sous trente jours depuis la page publique de la carte."],
+  ["heberg",   "Hébergement",
+   "Union européenne. Aucun transfert hors UE pour les contacts."],
+  ["journal",  "Journal des accès",
+   "Toute lecture, tout export et tout envoi au CRM sont enregistrés avec l’auteur, la date et le périmètre."],
+  ["perte",    "Téléphone perdu en salon",
+   "Effacement à distance des données locales et fermeture de la session, sans perdre les contacts déjà envoyés."],
+  ["chiffre",  "Chiffrement",
+   "TLS 1.3 pendant le transport, chiffrement au repos, cloisonnement strict par entreprise."],
+  ["soustrait","Sous-traitance",
+   "Contrat de sous-traitance et liste des sous-traitants tenus à disposition du client."]
+];
+const ETATS = [
+  ["fait",    "En place",          "t-ok"],
+  ["cours",   "En cours",          "t-neutral"],
+  ["contrat", "À contractualiser", "t-warm"],
+  ["hors",    "Hors périmètre",    "t-neutral"]
+];
+const ETAT_DEFAUT = { soustrait:"contrat" };
+
+function etatExigence(cle){
+  return (S.conformite && S.conformite[cle]) || ETAT_DEFAUT[cle] || "fait";
+}
+function poserEtatExigence(cle, etat){
+  if (!S.conformite) S.conformite = {};
+  S.conformite[cle] = etat;
+}
+/** La durée que le visiteur lit sur la tablette. */
+function dureeConservation(){
+  return (S.dureeMois != null) ? S.dureeMois : 24;
+}
+
 function vueConformite(){
-  const items = [
-    ["Information de la personne", "Un écran d’information s’affiche au moment de la capture, en une phrase, dans la langue du visiteur. Il n’ajoute pas d’étape : il s’affiche dans l’écran de prise de vue.", "Mise en œuvre"],
-    ["Base légale", "Intérêt légitime pour la prospection professionnelle B2B, consentement explicite pour l’inscription à une communication marketing. Les deux sont journalisés séparément.", "Mise en œuvre"],
-    ["Preuve de consentement", "Horodatage, salon, commercial, version du texte affiché. Conservée aussi longtemps que la donnée.", "Mise en œuvre"],
-    ["Durée de conservation", "24 mois après le dernier contact, purge automatique, alerte à 30 jours de l’échéance.", "Mise en œuvre"],
-    ["Droits des personnes", "Accès, rectification, effacement et opposition traités sous 30 jours depuis la page publique de la carte.", "Mise en œuvre"],
-    ["Hébergement", "Union européenne. Aucun transfert hors UE pour les données de leads.", "Mise en œuvre"],
-    ["Journal d’audit", "Toute lecture, export ou envoi CRM est journalisé avec auteur, date et périmètre. Conservation 12 mois.", "Mise en œuvre"],
-    ["Téléphone perdu en salon", "Effacement à distance des données locales, révocation de session, sans perte des leads déjà synchronisés.", "Mise en œuvre"],
-    ["Chiffrement", "TLS 1.3 en transit, chiffrement au repos, cloisonnement strict par organisation.", "Mise en œuvre"],
-    ["Sous-traitance", "Contrat de sous-traitance et registre des sous-traitants tenus à disposition du client.", "À contractualiser"]
-  ];
+  const compte = {};
+  ETATS.forEach(function(e){ compte[e[0]] = 0; });
+  EXIGENCES.forEach(function(x){ compte[etatExigence(x[0])]++; });
+  const mois = dureeConservation();
+  const retouche = !!(S.conformite && Object.keys(S.conformite).length) || S.dureeMois != null;
+
   return '<div class="page">' +
-    '<div class="pagehead"><p class="eyebrow">Configuration</p><h1>Conformité</h1>' +
-      '<p>Sur un stand, on ne fait pas signer un formulaire de consentement de trois écrans. ' +
-      'La conformité doit tenir en une phrase affichée au bon moment — sinon elle est contournée, ' +
-      'et c’est là que le risque réel apparaît.</p></div>' +
-    '<div class="tablewrap"><div class="tscroll"><table style="min-width:640px">' +
-      '<thead><tr><th scope="col">Exigence</th><th scope="col">Traitement retenu</th><th scope="col">État</th></tr></thead><tbody>' +
-      items.map(function(it){
-        return '<tr><td style="width:220px"><span class="cellname">' + esc(it[0]) + '</span></td>' +
-          '<td style="color:var(--ink-2);line-height:1.55">' + esc(it[1]) + '</td>' +
-          '<td><span class="tag ' + (it[2] === "Mise en œuvre" ? "t-ok" : "t-warm") + '">' + esc(it[2]) + '</span></td></tr>';
+    '<div class="pagehead"><p class="eyebrow">Configuration</p><h1>Le cadre légal</h1>' +
+      '<p>Sur un stand, on ne fait signer aucun formulaire de trois écrans : la règle doit tenir ' +
+      'en une phrase affichée au bon moment, sinon elle est contournée. Ce registre est le vôtre — ' +
+      'donnez à chaque exigence l’état où elle en est réellement chez vous.</p></div>' +
+
+    '<div class="kpigrid" style="margin-bottom:18px">' +
+      ETATS.map(function(e){
+        return kpi(e[1], compte[e[0]], "sur " + EXIGENCES.length + " exigences", null);
       }).join("") +
-      '</tbody></table></div></div>' +
+    '</div>' +
+
+    '<div class="cote"><span class="cote__val">01&nbsp;&nbsp;Durée de conservation</span></div>' +
+    '<section class="chart" style="margin-bottom:20px">' +
+      '<h3>Combien de temps gardez-vous un contact ?</h3>' +
+      '<p class="hint" style="margin-top:8px">Cette durée n’est pas décorative : c’est le nombre ' +
+        'que le visiteur lit sur la tablette du comptoir avant de cocher son accord. ' +
+        'Changez-la, et le texte de la borne change.</p>' +
+      '<div class="body" style="margin-top:16px">' +
+        '<div class="posterow" style="border-bottom:0">' +
+          '<label for="duree-mois">Conservation</label>' +
+          '<input type="range" id="duree-mois" data-duree="1" min="3" max="60" step="1" ' +
+            'value="' + mois + '" aria-label="Durée de conservation, en mois">' +
+          '<span class="vv num">' + mois + ' mois</span>' +
+        '</div>' +
+        '<p style="font:400 13px/1.55 var(--f-ui);color:var(--encre2);margin-top:14px;' +
+          'padding-left:12px;border-left:1px solid var(--arete)">' +
+          'Texte affiché au visiteur : « Vos coordonnées sont conservées ' + mois + '&nbsp;mois ' +
+          'après notre dernier échange, puis effacées. »</p>' +
+        (mois > 36
+          ? '<p style="font:400 13px/1.55 var(--f-ui);color:var(--verm-e);margin-top:12px">' +
+            'Au-delà de trois ans, une durée de conservation devient difficile à justifier pour ' +
+            'un simple contact de salon.</p>'
+          : "") +
+      '</div>' +
+    '</section>' +
+
+    '<div class="cote"><span class="cote__val">02&nbsp;&nbsp;Le registre</span></div>' +
+    '<div class="tablewrap"><div class="tscroll"><table style="min-width:760px">' +
+      '<thead><tr><th scope="col">Exigence</th><th scope="col">Ce qui est prévu</th>' +
+        '<th scope="col">Où vous en êtes</th></tr></thead><tbody>' +
+      EXIGENCES.map(function(x){
+        const e = etatExigence(x[0]);
+        return '<tr><td style="width:200px"><span class="cellname">' + esc(x[1]) + '</span></td>' +
+          '<td style="color:var(--encre2);line-height:1.55">' + esc(x[2]) + '</td>' +
+          '<td><div class="qchips" style="grid-template-columns:repeat(2,1fr);min-width:230px">' +
+            ETATS.map(function(et){
+              return '<button type="button" class="qchip bc-appui" style="min-height:34px;font-size:12px" ' +
+                (e === et[0] ? 'aria-pressed="true" ' : "") +
+                'data-conf="' + x[0] + '|' + et[0] + '">' + esc(et[1]) + '</button>';
+            }).join("") +
+          '</div></td></tr>';
+      }).join("") +
+      '</tbody></table></div>' +
+      '<div class="tfoot"><span>Aucun de ces états n’est coché par nous : un fournisseur qui ' +
+        'déclare lui-même sa propre conformité ne prouve rien. Le registre sert à savoir où ' +
+        'vous en êtes, et à le montrer.</span></div>' +
+    '</div>' +
+
+    (retouche
+      ? '<button type="button" class="btn btn-ghost btn-sm bc-appui" data-conf-reset="1" ' +
+        'style="margin-top:16px">Revenir aux valeurs de départ</button>'
+      : "") +
   '</div>';
 }
+
 
 /* ============================================================
    Vue : ma carte de visite numérique (bureau)
@@ -10428,6 +10662,31 @@ document.addEventListener("click", function(ev){
   }
   if (near("#btn-export-csv"))  { exporterCSV(S.leads, "complet"); return; }
   if (near("#btn-export-json")) { exporterJSON(S.leads); return; }
+  if ((el = near("[data-conf]"))) {
+    const b = el.dataset.conf.split("|");
+    poserEtatExigence(b[0], b[1]); sauver(); rendreEnGardantLeFocus(); return;
+  }
+  if (near("[data-conf-reset]")) {
+    S.conformite = null; S.dureeMois = null; sauver(); render();
+    toast("Registre revenu a ses valeurs de depart."); return;
+  }
+
+  if ((el = near("[data-jalon-on]"))) {
+    const c = el.dataset.jalonOn;
+    reglerJalon(c, "on", sequenceEffective()[c].on ? false : true);
+    sauver(); render(); return;
+  }
+  if (near("[data-seq-reset]")) {
+    S.sequence = null; sauver(); render();
+    toast("Sequence revenue a son reglage par defaut."); return;
+  }
+
+  if ((el = near("[data-budget-reset]"))) {
+    reinitialiserBudget(el.dataset.budgetReset);
+    sauver(); render(); toast("Budget revenu a sa valeur reelle.");
+    return;
+  }
+
   /* --- mapping CRM : retirer, remettre, revenir au defaut --- */
   if ((el = near("[data-mapexclu]"))) {
     const id = el.dataset.mapexclu;
@@ -10530,6 +10789,29 @@ document.addEventListener("input", function(ev){
   /* Le nom du champ cible se retouche a la frappe. On NE redessine PAS a
      chaque lettre : le champ perdrait le focus et le curseur reviendrait
      au debut. On enregistre, et l ecran se remet a jour quand on sort. */
+  /* Les curseurs de budget : on redessine a chaque mouvement pour que le
+     cout par lead suive le geste — c est tout l interet de l ecran — et
+     on rend le focus au curseur qu on tient. */
+  if (t.dataset && t.dataset.poste) {
+    retoucherBudget("wire26", t.dataset.poste, +t.value);
+    sauver(); render();
+    const n = document.getElementById("poste-" + t.dataset.poste);
+    if (n) n.focus();
+    return;
+  }
+  if (t.dataset && t.dataset.duree) {
+    S.dureeMois = +t.value; sauver(); render();
+    const n = document.getElementById("duree-mois");
+    if (n) n.focus();
+    return;
+  }
+  if (t.dataset && t.dataset.jalonJ) {
+    reglerJalon(t.dataset.jalonJ, "j", +t.value);
+    sauver(); render();
+    const n = document.getElementById("j-" + t.dataset.jalonJ);
+    if (n) n.focus();
+    return;
+  }
   if (t.dataset && t.dataset.mapapi) {
     retoucherMapping(S.crmCible, t.dataset.mapapi, "api", t.value.trim());
     sauver();
