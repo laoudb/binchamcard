@@ -574,6 +574,15 @@ tbody tr:last-child td{border-bottom:0}
 }
 .qchip:hover{background:var(--creux)}
 .qchip[aria-pressed="true"]{background:var(--encre);color:var(--blanc);box-shadow:none}
+.champapi{
+  width:100%;min-width:0;height:30px;padding:0 8px;background:var(--blanc);color:var(--encre);
+  border:0;border-radius:2px;box-shadow:inset 0 0 0 1px var(--joint);
+  font:400 12.5px/30px var(--f-mono);
+  transition:box-shadow 160ms var(--sortie)
+}
+.champapi:hover{box-shadow:inset 0 0 0 1px var(--arete)}
+.champapi:focus{outline:0;box-shadow:inset 0 0 0 1px var(--encre);background:var(--blanc)}
+.champapi:disabled{background:var(--creux);color:var(--encre3c)}
 </style>
 <style>
 /* ============================================================
@@ -994,6 +1003,19 @@ tbody tr:not(:hover){transition:background 140ms var(--sortie)}
   .roleswitch button{flex:0 0 auto}
   .brand span:first-of-type{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
+/* Page d ouverture : ni navigation laterale, ni filet vertical. Sans la
+   bande de 232 px, le texte se collait au bord de l ecran : la gouttiere
+   qu elle tenait par accident devient explicite, et le contenu reste
+   borne pour que les lignes ne s etirent pas sur 1 400 px. */
+.layout.sans-nav .sidenav,
+.mobnav.sans-nav{display:none}
+.layout.sans-nav .hero,
+.layout.sans-nav .page{
+  max-width:1180px;
+  padding-left:clamp(24px, 5vw, 72px);
+  padding-right:clamp(24px, 5vw, 72px)
+}
+
 /* Sous 560 px de haut, meme un appareil au plancher ne tient plus dans la
    coque figee : la page reprend le defilement plutot que de rogner l appareil.
    La regle « tenir sur un ecran » vaut pour un ecran, pas pour une fente. */
@@ -7253,6 +7275,13 @@ function render(){
   m.innerHTML = (views[S.view] || vueAccueil)();
   // Les vues qui montrent un appareil lui rendent de la hauteur.
   m.classList.toggle("vue-appareil", S.view === "terrain" || S.view === "kiosque");
+  /* La page d ouverture n a pas de navigation laterale : elle ne portait
+     donc qu une bande vide et un filet vertical dans le vide. Elle prend
+     toute la largeur. */
+  document.querySelector(".layout").classList.toggle("sans-nav", S.role === "accueil");
+  /* La barre mobile precede .layout dans le balisage : aucun selecteur
+     de voisinage ne peut la viser depuis lui. On la marque directement. */
+  document.getElementById("mobnav").classList.toggle("sans-nav", S.role === "accueil");
   cablerVue();
   poserEchelle();
 }
@@ -9483,6 +9512,57 @@ function libelleSource(c){ return c.libelle || LBL_SRC[c.src] || c.src || "—";
 /** Valeur à envoyer pour un lead donné. */
 function valeurMappee(c, l){ return c.calc ? c.calc(l) : (l[c.src] != null ? l[c.src] : ""); }
 
+
+/* ============================================================
+   LE MAPPING EFFECTIF.
+
+   L ecran d export promettait « modifiable champ par champ » alors que
+   les lignes etaient des <span> statiques. Il l est maintenant : les
+   retouches vivent dans S.mapping, cette fonction les applique, et TOUT
+   ce qui produit un fichier passe par elle. Un mapping qu on peut
+   changer sans que l export suive serait pire que pas de mapping.
+   ============================================================ */
+function champsCible(cle){
+  const base = CRM[cle].champs;
+  const perso = (S.mapping && S.mapping[cle]) || {};
+  return base.map(function(c){
+    const id = c.src || (c.calc && c.libelle) || c.api;
+    const o = perso[id];
+    if (!o) return c;
+    const copie = {};
+    Object.keys(c).forEach(function(k){ copie[k] = c[k]; });
+    if (o.api) copie.api = o.api;
+    copie.exclu = !!o.exclu;
+    return copie;
+  }).filter(function(c){ return !c.exclu; });
+}
+/** Les champs AVEC les exclus, pour l ecran de reglage. */
+function champsCibleTous(cle){
+  const base = CRM[cle].champs;
+  const perso = (S.mapping && S.mapping[cle]) || {};
+  return base.map(function(c){
+    const id = c.src || (c.calc && c.libelle) || c.api;
+    const o = perso[id] || {};
+    const copie = {};
+    Object.keys(c).forEach(function(k){ copie[k] = c[k]; });
+    copie.idMap = id;
+    copie.apiDefaut = c.api;
+    if (o.api) copie.api = o.api;
+    copie.exclu = !!o.exclu;
+    copie.retouche = !!(o.api && o.api !== c.api) || !!o.exclu;
+    return copie;
+  });
+}
+function retoucherMapping(cle, id, champ, valeur){
+  if (!S.mapping) S.mapping = {};
+  if (!S.mapping[cle]) S.mapping[cle] = {};
+  if (!S.mapping[cle][id]) S.mapping[cle][id] = {};
+  S.mapping[cle][id][champ] = valeur;
+}
+function reinitialiserMapping(cle){
+  if (S.mapping) delete S.mapping[cle];
+}
+
 /* Les connecteurs et le mapping sont definis dans 06a-crm.js. */
 
 /** Applique les regles de rapprochement de la specification aux donnees
@@ -9510,7 +9590,7 @@ function vueCRM(){
 
   return '<div class="page">' +
     '<div class="pagehead"><p class="eyebrow">Intégration</p><h1>Export CRM</h1>' +
-      '<p>Le mapping est fourni par défaut pour chaque CRM et reste modifiable champ par champ. ' +
+      '<p>Le mapping est fourni par défaut pour chaque CRM. Renommez un champ cible ou retirez-le de l’export : le fichier produit suit immédiatement. ' +
       'Les règles de rapprochement ci-dessous sont la spécification du connecteur ; ' +
       'dans cette démonstration, « pousser » marque la fiche comme transmise sans ' +
       'appeler le CRM.</p></div>' +
@@ -9536,15 +9616,30 @@ function vueCRM(){
         '<div class="body">' +
           '<div class="maprow" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-4)">' +
             '<span>BinchamCard</span><span></span><span>' + esc(cible.nom) + '</span><span>Type</span></div>' +
-          cible.champs.map(function(c){
-            return '<div class="maprow">' +
+          champsCibleTous(S.crmCible).map(function(c){
+            return '<div class="maprow"' + (c.exclu ? ' style="opacity:.5"' : "") + '>' +
               '<span>' + esc(libelleSource(c)) +
                 (c.requis ? ' <span style="color:var(--verm-e)" title="Champ obligatoire côté CRM">•</span>' : "") +
-                (c.calc ? ' <span class="tag t-neutral" style="font-size:10px">calculé</span>' : "") + '</span>' +
+                (c.calc ? ' <span class="tag t-neutral" style="font-size:10px">calculé</span>' : "") +
+                (c.retouche ? ' <span class="tag t-warm" style="font-size:10px">retouché</span>' : "") + '</span>' +
               '<span class="arr" aria-hidden="true">→</span>' +
-              '<span class="mono">' + esc(c.api) + '</span>' +
-              '<span style="font-size:11.5px;color:var(--ink-3)">' + esc(c.type) + '</span></div>';
+              '<span><input type="text" class="champapi mono" data-mapapi="' + esc(c.idMap) + '" ' +
+                'value="' + esc(c.api) + '" spellcheck="false" ' +
+                'aria-label="Nom du champ ' + esc(cible.nom) + ' pour ' + esc(libelleSource(c)) + '"' +
+                (c.exclu ? ' disabled' : "") + '></span>' +
+              '<span style="display:flex;align-items:center;gap:8px;justify-content:flex-end">' +
+                '<span style="font-size:11.5px;color:var(--ink-3)">' + esc(c.type) + '</span>' +
+                '<button type="button" class="btn btn-ghost btn-sm bc-appui" data-mapexclu="' +
+                  esc(c.idMap) + '" title="' + (c.exclu ? "Remettre ce champ dans l’export" :
+                  (c.requis ? "L’API refuse ce champ vide : l’exclure bloquera l’envoi" : "Retirer ce champ de l’export")) + '">' +
+                  (c.exclu ? "Remettre" : "Retirer") + '</button>' +
+              '</span></div>';
           }).join("") +
+          '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:14px">' +
+            '<button type="button" class="btn btn-ghost btn-sm bc-appui" data-mapreset="' +
+              esc(S.crmCible) + '">Revenir au mapping par défaut</button>' +
+            '<span class="estampille">' + champsCible(S.crmCible).length + ' champs partiront dans le fichier</span>' +
+          '</div>' +
           '<p class="hint" style="margin-top:12px"><span style="color:var(--hot)">•</span> champ refusé par l’API ' +
             esc(cible.nom) + ' s’il est vide : le lead est bloqué avant envoi, pas rejeté après. ' +
             'Les champs marqués <span class="tag t-neutral" style="font-size:10px">calculé</span> sont fabriqués par ' +
@@ -9964,9 +10059,9 @@ function csvEchappe(v){
 }
 function construireCSV(rows){
   const cible = CRM[S.crmCible];
-  const entetes = cible.champs.map(function(c){ return c.api; });
+  const entetes = champsCible(S.crmCible).map(function(c){ return c.api; });
   const lignes = rows.map(function(l){
-    return cible.champs.map(function(c){ return csvEchappe(valeurMappee(c, l)); }).join(";");
+    return champsCible(S.crmCible).map(function(c){ return csvEchappe(valeurMappee(c, l)); }).join(";");
   });
   // BOM UTF-8 : sans lui, Excel en Europe casse les accents.
   return "\ufeff" + entetes.join(";") + "\r\n" + lignes.join("\r\n") + "\r\n";
@@ -9983,7 +10078,7 @@ function construireJSON(rows){
     nombre:rows.length,
     enregistrements: rows.map(function(l){
       const o = {};
-      cible.champs.forEach(function(c){ o[c.api] = valeurMappee(c, l); });
+      champsCible(S.crmCible).forEach(function(c){ o[c.api] = valeurMappee(c, l); });
       return o;
     })
   }, null, 2);
@@ -10333,6 +10428,21 @@ document.addEventListener("click", function(ev){
   }
   if (near("#btn-export-csv"))  { exporterCSV(S.leads, "complet"); return; }
   if (near("#btn-export-json")) { exporterJSON(S.leads); return; }
+  /* --- mapping CRM : retirer, remettre, revenir au defaut --- */
+  if ((el = near("[data-mapexclu]"))) {
+    const id = el.dataset.mapexclu;
+    const actuel = ((S.mapping || {})[S.crmCible] || {})[id] || {};
+    retoucherMapping(S.crmCible, id, "exclu", !actuel.exclu);
+    sauver(); render();
+    toast(actuel.exclu ? "Champ remis dans l export." : "Champ retire de l export.");
+    return;
+  }
+  if ((el = near("[data-mapreset]"))) {
+    reinitialiserMapping(el.dataset.mapreset);
+    sauver(); render(); toast("Mapping revenu a sa valeur par defaut.");
+    return;
+  }
+
   /* --- fusion des doublons --- */
   if ((el = near("[data-fusion]"))) {
     S.fusion = { id:el.dataset.fusion, choix:{} };
@@ -10416,6 +10526,15 @@ document.addEventListener("click", function(ev){
 /* --- saisies --- */
 document.addEventListener("input", function(ev){
   const t = ev.target;
+
+  /* Le nom du champ cible se retouche a la frappe. On NE redessine PAS a
+     chaque lettre : le champ perdrait le focus et le curseur reviendrait
+     au debut. On enregistre, et l ecran se remet a jour quand on sort. */
+  if (t.dataset && t.dataset.mapapi) {
+    retoucherMapping(S.crmCible, t.dataset.mapapi, "api", t.value.trim());
+    sauver();
+    return;
+  }
 
   if (t.id === "q-carnet") {
     S.qCarnet = t.value; render();
