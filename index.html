@@ -6206,13 +6206,13 @@ function gesteManquant(l){
   });
   if (!cand.length) {
     return { multiple:true, ecart:ecart, seuil:seuil,
-      texte:"À " + ecart + " de la bande " + statutDe(seuil) + ". Plusieurs champs à renseigner." };
+      texte:"À " + ecart + " points du niveau " + statutDe(seuil) + ". Plusieurs champs à renseigner." };
   }
   cand.sort(function(a,b){ return (a.gain - b.gain) || (a.cout - b.cout); });
   const g = cand[0];
   return {
     multiple:false, ecart:ecart, seuil:seuil, choix:g,
-    texte:"À " + ecart + " de la bande " + statutDe(seuil) + ". " + g.texte +
+    texte:"À " + ecart + " points du niveau " + statutDe(seuil) + ". " + g.texte +
           " → " + (S0 + g.gain) + " / 100, " + statutDe(S0 + g.gain) + "."
   };
 }
@@ -6234,13 +6234,13 @@ function aBoucler(id){
   const sousBande = duJour.filter(function(l){ return emailExploitable(l) && (l.score || 0) < 60; });
   const nonTransmis = duJour.filter(function(l){ return qualifie(l) && !l.crm; });
   return [
-    { nom:"Prises à qualifier", n:S.pile.length,
-      aide:S.pile.length ? "Une prise non qualifiée ne compte pas dans le chiffre du jour." : "La Pile est vide.",
+    { nom:"Cartes à qualifier", n:S.pile.length,
+      aide:S.pile.length ? "Une carte non remplie ne compte pas dans le chiffre du jour." : "La liste est vide.",
       aller:"pile" },
     { nom:"Fiches sans e-mail exploitable", n:sansEmail.length,
       aide:"Sans e-mail, aucune relance ne peut partir : la fiche ne compte pas comme lead qualifié.",
       aller:"mesleads" },
-    { nom:"Sous la bande Tiède", n:sousBande.length,
+    { nom:"Sous le niveau Tiède", n:sousBande.length,
       aide:"Un critère de plus fait souvent basculer la fiche.", aller:"mesleads" },
     { nom:"Qualifiées, pas encore transmises", n:nonTransmis.length,
       aide:"Objectif : zéro à la fermeture du stand.", aller:"mesleads" }
@@ -6487,22 +6487,24 @@ function poserEchelle(){
 /* ============================================================
    Page d'ouverture.
 
-   DEUX RÈGLES TENUES ICI, ET ELLES SE RENFORCENT.
+   TROIS RÈGLES TENUES ICI.
 
    1. Aucune donnée du bac à sable ne remonte sur cette page.
-      Ni compte de leads, ni budget de salon, ni nombre de contacts au
-      carnet, ni nombre de pays. Ces chiffres décrivent un jeu de
-      démonstration, pas un client : les afficher en page d'accueil,
-      c'est vendre une donnée fausse. Ils vivent dans les vues Commercial,
-      Manager et Admin, où l'on comprend qu'on manipule une maquette.
+      Ni compte de contacts, ni budget de salon, ni nombre de pays. Ces
+      chiffres décrivent un jeu de démonstration, pas un client : les
+      afficher en accueil, c'est vendre une donnée fausse. Ils vivent
+      dans les vues Commercial, Manager et Admin, où l'on comprend qu'on
+      manipule une maquette.
 
-   2. On décrit des GESTES, jamais des bénéfices. « Il appuie, la prise
-      entre dans La Pile » est vérifiable en trois clics ; « gagnez du
-      temps » ne l'est pas.
+   2. Aucun mot de jargon maison. Pas de « prise », pas de « Pile », pas
+      de « viseur », pas de « bande ». Un visiteur qui découvre le
+      produit ne peut pas deviner ces mots, et un mot qu'il ne comprend
+      pas est une phrase perdue. On écrit « carte », « liste »,
+      « appareil photo », « niveau ».
 
-   Ce qui reste chiffré est écrit en toutes lettres et porte sur le
-   comportement du produit — quatre étapes, deux champs, huit secondes —
-   que le visiteur constate lui-même en ouvrant l'écran d'à côté.
+   3. On décrit des GESTES, jamais des bénéfices. « Il prend la carte en
+      photo, elle s'enregistre sur le téléphone » se vérifie en trois
+      clics ; « gagnez du temps » ne se vérifie pas.
    ============================================================ */
 
 /** Les trois solutions. C'est la première chose à comprendre :
@@ -6511,73 +6513,75 @@ const SOLUTIONS = [
   {
     n: "01",
     titre: "La carte de visite",
-    quoi: "Photographier une carte sur le stand, la trier plus tard, l’envoyer au CRM.",
+    quoi: "Prendre une carte de visite en photo sur le stand, la remplir plus tard, l’envoyer au CRM.",
     etapes: [
-      ["Il cadre et appuie sur le déclencheur.",
-       "La prise entre dans La Pile, écrite sur l’appareil. Aucun formulaire ne s’ouvre, " +
-       "aucun réseau n’est attendu, le viseur se réarme aussitôt."],
-      ["Il ouvre La Pile pendant un creux.",
-       "Les champs dont la lecture est douteuse sont remontés en tête de fiche, chacun " +
-       "étiqueté « à vérifier » avec son niveau de confiance."],
-      ["Il corrige, puis il répond au formulaire du salon.",
-       "Le score se recalcule à chaque appui, et le détail s’affiche sous les champs : " +
-       "critère, valeur retenue, points obtenus sur le maximum."],
+      ["Il prend la carte en photo.",
+       "Elle s’enregistre aussitôt sur le téléphone, dans la liste « À qualifier ». Aucun " +
+       "formulaire ne s’ouvre, le réseau n’est pas nécessaire, et l’appareil photo reste " +
+       "prêt pour la carte suivante."],
+      ["Il rouvre la liste quand le stand se vide.",
+       "Les informations mal lues sont affichées en premier, marquées « à vérifier ». " +
+       "Il n’a qu’à les corriger."],
+      ["Il répond à quelques questions sur le client.",
+       "La note du contact se met à jour à chaque réponse, et l’écran montre juste en " +
+       "dessous ce qui l’a fait monter ou descendre."],
       ["Il enregistre.",
-       "Le score monte, s’arrête net s’il frôle un seuil, puis la bande tombe avec une " +
-       "échéance de réponse datée en jours ouvrés."]
+       "La note s’affiche, le contact est classé chaud, tiède ou froid, et l’application " +
+       "indique la date à laquelle il faut le rappeler."]
     ],
     aller: "terrain|terrain|pile",
-    bouton: "Ouvrir La Pile",
-    pas: "Il n’y a pas de reconnaissance de texte dans cette démonstration : le déclencheur " +
-         "rejoue des cartes d’exemple. L’écriture CRM n’est pas branchée non plus — le mapping " +
-         "est réel, l’appel ne l’est pas."
+    bouton: "Voir la liste des cartes",
+    pas: "Dans cette démonstration, l’appareil photo ne lit pas vraiment les cartes : il " +
+         "rejoue des exemples préparés à l’avance. Et l’envoi vers le CRM n’est pas branché — " +
+         "les noms de champs sont exacts, mais rien n’est envoyé."
   },
   {
     n: "02",
     titre: "Le rapport de visite",
-    quoi: "L’administrateur écrit le formulaire du salon et le barème. Le commercial n’a qu’à répondre.",
+    quoi: "Le responsable prépare les questions du salon. Le commercial n’a plus qu’à y répondre.",
     etapes: [
-      ["Avant le salon, l’administrateur ordonne ses champs.",
-       "Il les monte, les descend, et bascule chacun entre obligatoire et facultatif d’un " +
-       "clic. L’aperçu du téléphone se redessine à côté, dans le même ordre."],
-      ["Il tire un curseur de pondération.",
-       "Les leads déjà saisis sont rescorés à l’instant, sans validation, et l’histogramme " +
-       "des bandes bouge sous ses yeux."],
-      ["Sur le stand, le commercial tape des pastilles.",
-       "Il ne voit ni curseur, ni pondération, ni réglage. La complexité vit chez " +
-       "l’administrateur, jamais dans sa main."],
-      ["Un visiteur que personne n’a abordé remplit la borne.",
-       "Quatre étapes, deux champs métier au maximum, consentement bloquant. La borne " +
-       "s’efface et revient à l’accueil huit secondes après le remerciement."]
+      ["Avant le salon, le responsable choisit ses questions.",
+       "Il les met dans l’ordre qu’il veut et décide lesquelles sont obligatoires. L’écran " +
+       "de droite montre en direct ce que le commercial verra sur son téléphone."],
+      ["Il règle l’importance de chaque question.",
+       "Les contacts déjà enregistrés sont reclassés immédiatement : il voit tout de suite " +
+       "combien deviennent chauds, et combien retombent."],
+      ["Sur le stand, le commercial répond en tapant.",
+       "Il ne voit aucun réglage, aucun curseur, aucun calcul. Tout le paramétrage reste " +
+       "chez le responsable."],
+      ["Un visiteur que personne n’a pu aborder remplit la tablette du comptoir.",
+       "Quatre écrans, deux questions au maximum, et il doit cocher son accord pour être " +
+       "recontacté. La tablette s’efface et redevient vierge huit secondes plus tard, " +
+       "pour le visiteur suivant."]
     ],
     aller: "admin|scoring|",
-    bouton: "Tirer un curseur",
-    pas: "Le formulaire n’a pas de logique conditionnelle, pas de version multilingue, et ses " +
-         "champs ne peuvent être ni ajoutés ni supprimés. La borne recueille une case cochée, " +
-         "pas une signature."
+    bouton: "Régler les questions",
+    pas: "Les questions ne peuvent pas s’enchaîner selon les réponses, il n’y a pas de " +
+         "traduction dans d’autres langues, et on ne peut ni en ajouter ni en supprimer. " +
+         "La tablette recueille une case cochée, pas une signature."
   },
   {
     n: "03",
     titre: "La qualité du carnet",
-    quoi: "Mesurer ce que le stand a capté : ce qui manque, ce qui est douteux, ce qui est en double.",
+    quoi: "Voir ce qui manque dans les contacts récoltés, ce qui est douteux, et ce qui est en double.",
     etapes: [
-      ["Chaque fiche est notée sur sa complétude.",
-       "E-mail, téléphone, fonction, machine, produit. La complétude entre dans le score : " +
-       "une fiche vide ne peut pas être chaude."],
-      ["L’application nomme le geste qui manque.",
-       "Elle balaie toutes les valeurs possibles, retient le plus petit geste suffisant, et " +
-       "l’écrit en clair : quel champ remplir, et le score que ça donnerait."],
-      ["Le carnet traverse les salons.",
-       "Un lead appartient à une édition ; un contact appartient à l’entreprise. Le carnet " +
-       "réunit les deux, tous modes de capture confondus, dans une seule table filtrable."],
-      ["Il compte ses doublons.",
-       "Sur trois clés : même e-mail, même téléphone, ou même personne dans la même société."]
+      ["Chaque contact est noté sur ce qui lui manque.",
+       "Adresse e-mail, téléphone, fonction, machine concernée, produit voulu. Un contact " +
+       "à qui il manque tout cela ne peut pas être classé chaud."],
+      ["L’application dit quoi remplir.",
+       "Elle cherche la seule information qui ferait passer le contact au niveau au-dessus, " +
+       "et l’écrit noir sur blanc : quel champ, et la note que ça donnerait."],
+      ["Le carnet réunit tous les salons.",
+       "Les contacts du salon en cours et ceux des salons précédents sont dans la même " +
+       "liste, quelle que soit la façon dont ils ont été récoltés."],
+      ["Il repère les contacts en double.",
+       "Même adresse e-mail, même numéro de téléphone, ou même personne dans la même société."]
     ],
     aller: "manager|carnet|",
     bouton: "Ouvrir le carnet",
-    pas: "BinchamCard ne va chercher aucune donnée à l’extérieur : ni registre du commerce, ni " +
-         "annuaire, ni signature d’e-mail. Il mesure ce que le stand a capté, il ne le complète " +
-         "pas. Et les doublons sont comptés, pas encore fusionnés."
+    pas: "BinchamCard ne va chercher aucune information à l’extérieur : ni registre du " +
+         "commerce, ni annuaire, ni signature d’e-mail. Il mesure ce que vous avez récolté, " +
+         "il ne le complète pas. Et les doublons sont repérés, pas encore fusionnés."
   }
 ];
 
@@ -6587,22 +6591,23 @@ const ROLES = [
     role: "Commercial",
     ou: "Debout sur le stand, une main libre",
     question: "Qu’est-ce que je fais du contact que je viens de rencontrer ?",
-    ecrans: ["Mon salon", "Capturer", "La Pile", "Fiche de qualification",
-             "Le Dévoilement", "Ma carte", "Mode kiosque", "Synchro"],
+    ecrans: ["Mon salon", "Photographier une carte", "À qualifier", "Fiche du contact",
+             "La note du contact", "Ma carte", "Tablette du comptoir", "Envoi"],
     aller: "terrain|terrain|"
   },
   {
     role: "Manager",
     ou: "Assis, pendant et après le salon",
-    question: "Qu’est-ce que mon équipe ramène, et ce salon nous a coûté combien par lead ?",
-    ecrans: ["Tableau de bord", "Le carnet", "Par salon", "Leads", "Équipe", "Export CRM", "Relances"],
+    question: "Qu’est-ce que mon équipe ramène, et ce salon nous a coûté combien par contact ?",
+    ecrans: ["Tableau de bord", "Le carnet", "Salon par salon", "Les contacts", "L’équipe",
+             "Envoi au CRM", "Les rappels"],
     aller: "manager|dashboard|"
   },
   {
     role: "Admin",
     ou: "Avant le salon, sans nous appeler",
     question: "Comment j’adapte l’outil à mon métier ?",
-    ecrans: ["Formulaire", "Scoring", "Connecteurs", "Conformité"],
+    ecrans: ["Les questions du salon", "La notation", "Les CRM connectés", "Le cadre légal"],
     aller: "admin|builder|"
   }
 ];
@@ -6610,15 +6615,15 @@ const ROLES = [
 function vueAccueil(){
   return '' +
   '<div class="hero">' +
-    '<p class="eyebrow">Capture et qualification de leads en salon</p>' +
-    '<h1>Trois solutions, un seul parcours du stand au CRM.</h1>' +
-    '<p class="lead">La carte de visite se photographie et se trie. Le rapport de visite se ' +
-      'configure avant le salon et se remplit debout. Le carnet mesure ce qu’il a capté. ' +
+    '<p class="eyebrow">Récolter et trier des contacts en salon</p>' +
+    '<h1>Trois solutions, un seul chemin du stand au CRM.</h1>' +
+    '<p class="lead">Photographier une carte de visite et la trier. Préparer les questions du ' +
+      'salon et y répondre debout. Voir ce qui manque dans les contacts récoltés. ' +
       'Tout est manipulable ci-dessous, en direct.</p>' +
     '<div class="ctas">' +
       '<button type="button" class="btn btn-primary" data-go="terrain|terrain|pile">' +
-        'Qualifier un lead' + ic("right",15) + '</button>' +
-      '<button type="button" class="link" data-go="manager|salons|">Voir le pilotage par salon ' +
+        'Essayer sur un contact' + ic("right",15) + '</button>' +
+      '<button type="button" class="link" data-go="manager|salons|">Voir le suivi salon par salon ' +
         '<span aria-hidden="true">→</span></button>' +
     '</div>' +
 
@@ -6640,7 +6645,7 @@ function vueAccueil(){
     /* ---- les trois solutions ---- */
     '<div class="cote"><span class="cote__val">01&nbsp;&nbsp;Les trois solutions</span></div>' +
     '<p class="lead" style="max-width:64ch;margin-bottom:32px">Ce que chacune fait, geste par ' +
-      'geste. Chaque solution ouvre l’écran qui la démontre, et dit ce qu’elle ne fait pas.</p>' +
+      'geste. Chaque solution ouvre l’écran qui la montre, et dit ce qu’elle ne fait pas.</p>' +
 
     SOLUTIONS.map(function(s){
       return '<section class="chart" style="margin-bottom:20px">' +
@@ -6662,7 +6667,7 @@ function vueAccueil(){
             'padding-top:20px;border-top:1px solid var(--joint)">' +
             '<button type="button" class="btn btn-primary btn-sm" data-go="' + esc(s.aller) + '">' +
               esc(s.bouton) + '</button>' +
-            '<span class="estampille">l’écran qui le prouve</span>' +
+            '<span class="estampille">l’écran qui le montre</span>' +
           '</div>' +
 
           '<p style="margin-top:20px;padding-left:14px;border-left:1px solid var(--arete);' +
@@ -6674,9 +6679,10 @@ function vueAccueil(){
     }).join("") +
 
     /* ---- les trois rôles ---- */
-    '<div class="cote"><span class="cote__val">02&nbsp;&nbsp;Trois rôles, une seule base</span></div>' +
+    '<div class="cote"><span class="cote__val">02&nbsp;&nbsp;Trois métiers, une seule base</span></div>' +
     '<p class="lead" style="max-width:64ch;margin-bottom:32px">Le sélecteur en haut à droite ' +
-      'change de rôle sans rien recharger. Les trois voient les mêmes leads, pas les mêmes écrans.</p>' +
+      'change de métier sans rien recharger. Les trois voient les mêmes contacts, mais pas ' +
+      'les mêmes écrans.</p>' +
 
     '<div class="chartgrid g-auto">' +
       ROLES.map(function(v){
@@ -6699,32 +6705,33 @@ function vueAccueil(){
     '<div class="cote"><span class="cote__val">03&nbsp;&nbsp;Ce que cette démonstration est</span></div>' +
     '<div class="chartgrid g-2">' +
       '<section class="chart">' +
-        '<h3>Un bac à sable, et il le dit</h3>' +
+        '<h3>Des contacts inventés, et on le dit</h3>' +
         '<p class="hint" style="margin-top:10px">' +
-          'Les contacts, les salons et les budgets que vous verrez dans les trois rôles sont ' +
-          'inventés pour la démonstration. Aucun chiffre de cette page d’accueil n’en vient : ' +
-          'nous ne présentons pas une donnée fabriquée comme un résultat.' +
+          'Les contacts, les salons et les budgets que vous verrez dans les trois métiers ont ' +
+          'été inventés pour la démonstration. Aucun chiffre de cette page d’accueil n’en ' +
+          'vient : nous ne présentons pas une donnée fabriquée comme un résultat.' +
         '</p>' +
         '<p class="hint" style="margin-top:12px">' +
           'Tout est modifiable et rien ne sort de chez vous : la maquette est conservée dans ' +
-          'votre navigateur, vos modifications ne sont visibles que par vous.' +
+          'votre navigateur, et vos modifications ne sont visibles que par vous.' +
         '</p>' +
         '<div class="body" style="margin-top:16px">' +
           '<button type="button" class="btn btn-ghost btn-sm" id="btn-reset">' +
-            'Réinitialiser la démonstration</button>' +
+            'Tout remettre à zéro</button>' +
         '</div>' +
       '</section>' +
       '<section class="chart">' +
-        '<h3>Ce qui est simulé, dit une fois pour toutes</h3>' +
+        '<h3>Ce qui est imité, dit une fois pour toutes</h3>' +
         '<div class="body" style="margin-top:10px">' +
           '<ul style="margin:0;padding-left:18px;font:400 13px/1.6 var(--f-ui);color:var(--encre2)">' +
-            '<li>La lecture de carte rejoue des cartes d’exemple. Aucune reconnaissance de ' +
-              'texte ne tourne ici.</li>' +
-            '<li>Le mapping CRM porte les vrais noms d’API et les champs que l’API refuse à ' +
-              'vide, mais aucun appel n’est émis.</li>' +
-            '<li>La bascule hors ligne change l’affichage ; il n’y a pas de file de reprise ' +
-              'derrière.</li>' +
-            '<li>Les doublons sont comptés, sans écran pour les fusionner.</li>' +
+            '<li>L’appareil photo ne lit pas vraiment les cartes : il rejoue des exemples ' +
+              'préparés à l’avance.</li>' +
+            '<li>Les noms de champs des CRM sont exacts, y compris ceux que le CRM refuse ' +
+              'de laisser vides, mais rien n’est envoyé.</li>' +
+            '<li>Le bouton « hors ligne » change seulement l’affichage : il n’y a pas de ' +
+              'vraie file d’attente derrière.</li>' +
+            '<li>Les contacts en double sont repérés, mais aucun écran ne permet encore de ' +
+              'les fusionner.</li>' +
           '</ul>' +
           '<p class="hint" style="margin-top:14px">Nous préférons l’écrire plutôt que ' +
             'd’afficher un taux de lecture que vous ne pourriez pas vérifier.</p>' +
@@ -6740,7 +6747,7 @@ function vueAccueil(){
 const PTABS = [
   { id:"salon",   nom:"Mon salon", icone:"target" },
   { id:"capture", nom:"Capturer",  icone:"scan" },
-  { id:"pile",    nom:"La Pile",   icone:"layers" },
+  { id:"pile",    nom:"À qualifier", icone:"layers" },
   { id:"carte",   nom:"Ma carte",  icone:"card" },
   { id:"sync",    nom:"Synchro",   icone:"sync" }
 ];
@@ -6760,9 +6767,9 @@ const RAIL = {
     ]},
   pile: { on:2, titre:"Le triage différé, pendant les creux",
     steps:[
-      ["La Pile absorbe l’affluence","Toutes les captures brutes s’empilent. Le commercial les traite quand le stand se vide, pas quand le visiteur est devant lui."],
+      ["La liste absorbe l’affluence","Toutes les cartes photographiées s’y accumulent. Le commercial les remplit quand le stand se vide, pas quand le visiteur est devant lui."],
       ["Le doute est signalé, pas masqué","Chaque champ extrait porte un niveau de confiance. Sous 0,80, il remonte en tête de fiche avec une pastille « à vérifier ». Le reste n’encombre pas."],
-      ["Rien ne se perd","Une capture reste dans La Pile tant qu’elle n’est pas qualifiée. Elle n’est jamais supprimée du téléphone avant accusé de réception du serveur."]
+      ["Rien ne se perd","Une carte reste dans la liste tant qu’elle n’est pas remplie. Elle n’est jamais effacée du téléphone avant que le serveur ait confirmé l’avoir reçue."]
     ]},
   carte: { on:3, titre:"L’échange sans papier",
     steps:[
@@ -6785,7 +6792,8 @@ function vueTerrain(){
     '<div class="pagehead">' +
       '<p class="eyebrow">Commercial sur stand</p>' +
       '<h1>L’application terrain</h1>' +
-      '<p>Le téléphone ci-dessous est interactif. Photographiez une carte, laissez-la dans La Pile, ' +
+      '<p>Le téléphone ci-dessous est interactif. Photographiez une carte, laissez-la dans la liste ' +
+      '« À qualifier », ' +
          'puis qualifiez-la : c’est le parcours réel, dans l’ordre réel.</p>' +
     '</div>' +
     '<div class="terrainwrap">' +
@@ -6867,13 +6875,13 @@ function pCapture(){
       '<div style="font:600 17px/1.3 var(--f-ui);color:#FFFFFF">Prise n° ' +
         String(S.pile.length).padStart(3, "0") + '</div>' +
       '<p style="font:400 13px/1.5 var(--f-ui);color:#A3A9B1;margin-top:8px;max-width:28ch">' +
-        'Enregistrée sur l’appareil, en attente dans La Pile.</p>' +
+        'Enregistrée sur le téléphone, en attente dans « À qualifier ».</p>' +
       '<div class="bc-face-cachee" style="margin-top:20px">' +
         '<span style="font:600 11px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5)">Contact enregistré</span>' +
         '<div style="font:400 15px/1.4 var(--f-ui);color:rgba(255,255,255,.85);margin-top:6px">' +
           'Il ne compte pas encore<br>dans les leads qualifiés</div>' +
       '</div>' +
-      '<p style="font:400 11px/1 var(--f-mono);color:rgba(255,255,255,.4);margin-top:20px">Viseur réarmé.</p>' +
+      '<p style="font:400 11px/1 var(--f-mono);color:rgba(255,255,255,.4);margin-top:20px">Prêt pour la suivante.</p>' +
     '</div></div>';
   }
 
@@ -6904,7 +6912,7 @@ function pCapture(){
 function pPile(){
   if (!S.pile.length) {
     return '<div class="psec">' +
-      '<div class="phead"><h2>La Pile</h2></div>' +
+      '<div class="phead"><h2>À qualifier</h2></div>' +
       '<div style="text-align:center;padding:56px 12px;color:var(--ink-3)">' +
         '<div style="color:var(--ok);display:flex;justify-content:center;margin-bottom:12px">' + ic("check",34) + '</div>' +
         '<div style="font-size:14px;font-weight:600;color:var(--ink)">Pile vide</div>' +
@@ -6913,7 +6921,7 @@ function pPile(){
       '</div></div>';
   }
   return '<div class="psec">' +
-    '<div class="phead"><h2>La Pile</h2><span class="ps">' + S.pile.length + ' à qualifier</span></div>' +
+    '<div class="phead"><h2>À qualifier</h2><span class="ps">' + S.pile.length + ' à qualifier</span></div>' +
     '<div class="plist">' +
       S.pile.map(function(p){
         const bas = Object.keys(p.conf).filter(function(k){ return p.conf[k] < .8; }).length;
@@ -6976,7 +6984,7 @@ function pFiche(){
 
   return '<div class="psec">' +
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
-      '<button type="button" class="iconbtn" id="btn-back" aria-label="Retour à La Pile" style="transform:rotate(180deg)">' + ic("right",18) + '</button>' +
+      '<button type="button" class="iconbtn" id="btn-back" aria-label="Retour à la liste À qualifier" style="transform:rotate(180deg)">' + ic("right",18) + '</button>' +
       '<div style="flex:1"><div style="font-size:16px;font-weight:600;letter-spacing:-.02em">Qualifier</div>' +
       '<div style="font-size:11px;color:var(--ink-3)">' + esc(p.capture) + '</div></div>' +
       '<span class="tag ' + statClass(st) + '"><span class="dot"></span>' + esc(st) + ' · ' + det.total + '</span>' +
@@ -7192,7 +7200,7 @@ function pSalon(){
         'style="margin-top:16px;background:var(--creux)">' +
         '<span class="gouttiere__marque num">' + S.pile.length + '</span>' +
         '<span style="flex:1;min-width:0">' +
-          '<span class="pn">' + S.pile.length + ' prise' + (S.pile.length>1?'s':'') + ' à qualifier</span>' +
+          '<span class="pn">' + S.pile.length + ' carte' + (S.pile.length>1?'s':'') + ' à qualifier</span>' +
           '<span class="pc">' + (j.plusAncienne >= 60
             ? 'la plus ancienne depuis ' + Math.floor(j.plusAncienne / 60) + ' h'
             : 'la plus ancienne depuis ' + j.plusAncienne + ' min') + '</span></span>' +
@@ -7311,7 +7319,7 @@ function pDevoilement(){
                 'Corriger maintenant</button>') +
           '</div>'
         : '<p style="font-size:12px;color:var(--f-texte-3);text-align:center;line-height:1.5">' +
-          'Fiche au maximum de sa bande. Rien à rattraper.</p>') +
+          'Fiche au maximum de son niveau. Rien à rattraper.</p>') +
     '</div>' +
 
     '<button type="button" class="bigbtn bc-appui" id="dev-fin" style="margin-top:18px">' +
@@ -8269,7 +8277,7 @@ function vueKiosque(){
         '</div>' +
         '<div class="rail" style="margin-top:18px">' +
           [["Elle tourne sans surveillance",
-            "L’écran se réarme tout seul après chaque visiteur. Sans ce réarmage, le suivant lit les " +
+            "L’écran s’efface tout seul après chaque visiteur. Sans cet effacement, le suivant lit les " +
             "coordonnées du précédent — et la borne devient un incident de confidentialité."],
            ["Deux champs métier, pas douze",
             "La borne n’affiche que les champs marqués obligatoires par l’administrateur, et au maximum " +
@@ -8278,7 +8286,7 @@ function vueKiosque(){
             "C’est le seul mode de capture où la personne saisit ses données de sa main. La preuve de " +
             "consentement est horodatée et conservée avec la fiche."],
            ["Le lead entre dans le même flux",
-            "Il rejoint La Pile, prend un score, et part au CRM comme les autres. La borne n’est pas " +
+            "Il rejoint la même liste, reçoit un score, et part au CRM comme les autres. La borne n’est pas " +
             "un silo : c’est une porte d’entrée de plus."]
           ].map(function(s, i){
             return '<div class="step on"><div class="n num">' + (i+1) + '</div><div>' +
@@ -8288,7 +8296,7 @@ function vueKiosque(){
         '<div class="card card-p" style="margin-top:16px">' +
           '<h3 style="font-size:14px">Réglages de la borne</h3>' +
           '<div style="display:flex;flex-direction:column;gap:11px;margin-top:12px">' +
-            reglageKiosque("Réarmage automatique", "kAuto", S.kiosque.autoReset,
+            reglageKiosque("Effacement automatique", "kAuto", S.kiosque.autoReset,
               "Efface la saisie et revient à l’accueil après chaque visiteur.") +
             reglageKiosque("Demander l’intérêt produit", "kInteret", S.kiosque.interet,
               "Ajoute une étape de qualification. À couper si le flux est très dense.") +
@@ -8424,9 +8432,9 @@ function kMerci(){
         'style="width:100%;margin-top:8px">Corriger la saisie</button>' +
       (S.kiosque.autoReset
         ? '<p style="font-size:11.5px;color:var(--f-texte-3);text-align:center;margin-top:11px">' +
-          'Réarmage automatique dans <b id="k-compte" style="color:var(--f-texte)">8</b> secondes</p>'
+          'Effacement automatique dans <b id="k-compte" style="color:var(--f-texte)">8</b> secondes</p>'
         : '<p style="font-size:11.5px;color:var(--encre);text-align:center;margin-top:11px">' +
-          'Réarmage automatique coupé : la saisie reste à l’écran.</p>') +
+          'Effacement automatique coupé : la saisie reste à l’écran.</p>') +
     '</div>' +
   '</div>';
 }
@@ -8892,7 +8900,7 @@ function vueConnecteurs(){
 
 function vueConformite(){
   const items = [
-    ["Information de la personne", "Un écran d’information s’affiche au moment de la capture, en une phrase, dans la langue du visiteur. Il n’ajoute pas d’étape : il est intégré au viseur.", "Mise en œuvre"],
+    ["Information de la personne", "Un écran d’information s’affiche au moment de la capture, en une phrase, dans la langue du visiteur. Il n’ajoute pas d’étape : il s’affiche dans l’écran de prise de vue.", "Mise en œuvre"],
     ["Base légale", "Intérêt légitime pour la prospection professionnelle B2B, consentement explicite pour l’inscription à une communication marketing. Les deux sont journalisés séparément.", "Mise en œuvre"],
     ["Preuve de consentement", "Horodatage, salon, commercial, version du texte affiché. Conservée aussi longtemps que la donnée.", "Mise en œuvre"],
     ["Durée de conservation", "24 mois après le dernier contact, purge automatique, alerte à 30 jours de l’échéance.", "Mise en œuvre"],
